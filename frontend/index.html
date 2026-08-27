@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1312 Coffee Lab</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Permanent+Marker&family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0C;
+    --panel:#131316;
+    --panel-2:#1A1A1F;
+    --line:#26262C;
+    --line-soft:#1E1E23;
+    --text:#EDEDF0;
+    --text-dim:#9A9AA3;
+    --text-faint:#5C5C64;
+    --holo-1:#FF3DAE;
+    --holo-2:#37E5FF;
+    --holo-3:#C6FF3D;
+    --holo-4:#B463FF;
+    --metal-1:var(--holo-2);
+    --metal-2:var(--holo-1);
+    --metal-3:var(--holo-3);
+    --metal-deep:var(--holo-4);
+    --purple:#C6C9D6;
+    --purple-2:#F2F0FF;
+    --purple-deep:var(--holo-4);
+    --sumi:#0A0A0C;
+    --accent:#B23A2E;
+    --green:#34D399;
+    --red:#F2686D;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Archivo', sans-serif;
+    font-weight:400;
+    letter-spacing:.01em;
+    overflow-x:hidden;
+  }
+  .aurora{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    overflow:hidden;
+  }
+  .aurora::after{
+    content:'';
+    position:absolute; inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity:.05; mix-blend-mode:overlay;
+  }
+  .aurora span{
+    position:absolute; border-radius:50%; filter:blur(70px); opacity:.35;
+    animation:drift 22s ease-in-out infinite;
+  }
+  .aurora span:nth-child(1){width:260px; height:260px; background:radial-gradient(circle, var(--metal-1), transparent 70%); top:-60px; left:-40px; animation-duration:26s;}
+  .aurora span:nth-child(2){width:220px; height:220px; background:radial-gradient(circle, var(--holo-3), transparent 70%); top:40%; right:-60px; opacity:.18; animation-duration:32s; animation-delay:-6s;}
+  .aurora span:nth-child(3){width:300px; height:300px; background:radial-gradient(circle, var(--metal-2), transparent 70%); bottom:-80px; left:10%; animation-duration:28s; animation-delay:-14s;}
+  @keyframes drift{
+    0%,100%{transform:translate(0,0) scale(1);}
+    33%{transform:translate(30px,-40px) scale(1.15);}
+    66%{transform:translate(-25px,25px) scale(.9);}
+  }
+  .shell{max-width:460px; margin:0 auto; min-height:100vh; position:relative; padding-bottom:88px; z-index:1;}
+
+  .auth-gate{
+    position:fixed; inset:0; z-index:50;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px; background:rgba(10,10,12,.72);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+  .auth-gate.hide{display:none;}
+  .auth-card{
+    width:100%; max-width:360px;
+    background:var(--panel); border:1.5px solid var(--line);
+    border-radius:22px; padding:28px 24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .auth-error{color:var(--red); font-size:12px; margin:8px 0 0; min-height:14px;}
+  .auth-switch{text-align:center; font-size:12.5px; color:var(--text-dim); margin:16px 0 0;}
+  .auth-switch a{color:var(--holo-2); cursor:pointer; font-weight:600;}
+  .auth-hint{font-size:10.5px; color:var(--text-faint); text-align:center; margin:18px 0 0; line-height:1.5; border-top:1px dashed var(--line); padding-top:14px;}
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 20px 12px;
+    position:sticky; top:0; z-index:5;
+    background:rgba(10,10,12,.55);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  }
+  .logo{display:flex; flex-direction:column; line-height:1; position:relative; transform:rotate(-3deg);}
+  .logo .num{
+    font-family:'Bungee', sans-serif;
+    font-weight:400;
+    font-size:22px;
+    letter-spacing:.02em;
+    background:linear-gradient(115deg, var(--metal-2) 0%, var(--metal-3) 22%, var(--metal-1) 40%, var(--metal-deep) 55%, var(--metal-3) 72%, var(--metal-2) 100%);
+    background-size:220% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-stroke:1px rgba(237,238,241,.5);
+    animation:shine 7s ease-in-out infinite;
+  }
+  @keyframes shine{
+    0%{background-position:0% 50%; filter:hue-rotate(0deg);}
+    50%{background-position:100% 50%; filter:hue-rotate(35deg);}
+    100%{background-position:0% 50%; filter:hue-rotate(0deg);}
+  }
+  .logo .sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:8px;
+    letter-spacing:.32em;
+    color:var(--text-faint);
+    margin-top:3px;
+  }
+  .icon-btn{
+    width:38px; height:38px;
+    border-radius:50%;
+    background:var(--panel);
+    border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .icon-btn:active{transform:scale(.88);}
+  .icon-btn.back{background:transparent; border:none;}
+  .icon svg{width:18px; height:18px; stroke:currentColor; stroke-width:1.3; fill:none; stroke-linecap:round; stroke-linejoin:round;}
+
+  main{padding:8px 20px 0;}
+  .view{display:none;}
+  .view.show{display:block;}
+
+  h1.greet{font-family:'Bungee', sans-serif; font-weight:600; font-size:24px; margin:8px 0 2px; letter-spacing:-.01em;}
+  p.hint{color:var(--text-dim); font-size:13.5px; margin:0 0 24px; font-weight:300;}
+
+  .card{
+    background:var(--panel);
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    padding:20px;
+    margin-bottom:16px;
+    position:relative;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .card:nth-child(odd){transform:rotate(-.6deg);}
+  .card:nth-child(even){transform:rotate(.6deg);}
+  .card:active{transform:scale(.98) rotate(0deg);}
+  .card.grad{
+    background:linear-gradient(150deg, rgba(255,61,174,.1), rgba(19,19,22,1) 55%);
+    border-color:var(--line);
+    border-top:1.5px solid rgba(55,229,255,.4);
+    box-shadow:0 0 0 rgba(220,222,227,0);
+  }
+  .card.grad:active{box-shadow:0 8px 28px rgba(196,99,255,.18);}
+  .card-row{display:flex; align-items:center; justify-content:space-between;}
+  .card-title{font-weight:600; font-size:15px; margin:0;}
+  .card-sub{color:var(--text-dim); font-size:12.5px; margin:2px 0 0; font-weight:300;}
+  .fab{
+    width:42px; height:42px; border-radius:50%;
+    background:linear-gradient(135deg, var(--metal-3), var(--metal-1) 30%, var(--metal-deep) 55%, var(--metal-3) 80%, var(--metal-2));
+    background-size:220% 220%;
+    animation:shine 6s ease-in-out infinite, glow 2.6s ease-in-out infinite;
+    display:flex; align-items:center; justify-content:center;
+    color:#0A0A0C; flex-shrink:0; cursor:pointer; border:none;
+    transition:transform .15s ease;
+  }
+  .fab:active{transform:scale(.9);}
+  @keyframes glow{
+    0%,100%{box-shadow:0 4px 16px rgba(0,0,0,.4), 0 0 0 rgba(220,222,227,.25);}
+    50%{box-shadow:0 4px 20px rgba(0,0,0,.45), 0 0 18px rgba(220,222,227,.4);}
+  }
+  .fab .icon svg{stroke:#0A0A0C;}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin:0 0 4px;
+  }
+  .ratio-big{
+    font-family:'Bungee', sans-serif;
+    font-weight:700;
+    font-size:34px;
+    margin:2px 0 4px;
+    background:linear-gradient(120deg, var(--metal-1), var(--metal-3) 35%, var(--metal-deep) 60%, var(--metal-1));
+    background-size:200% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:shine 8s ease-in-out infinite;
+  }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12px; font-weight:500;
+    padding:4px 10px; border-radius:20px;
+  }
+  .status-pill.good{background:rgba(52,211,153,.14); color:var(--green);}
+  .status-pill.warn{background:rgba(242,104,109,.14); color:var(--red);}
+  .status-pill.idle{background:var(--panel-2); color:var(--text-dim);}
+  .dot{width:6px; height:6px; border-radius:50%; background:currentColor;}
+
+  .stat-row{display:flex; justify-content:space-between; margin-top:16px; gap:8px;}
+  .stat{flex:1; text-align:left;}
+  .stat .k{font-size:11px; color:var(--text-dim);}
+  .stat .v{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:16px; margin-top:2px;}
+
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;}
+  .grid-tile{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    cursor:pointer;
+    transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .grid-tile:active{transform:scale(.96); border-color:rgba(237,238,241,.3); box-shadow:0 0 20px rgba(220,222,227,.08);}
+  .grid-tile .icon-wrap{
+    width:34px; height:34px; border-radius:10px;
+    background:var(--panel-2);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--purple-2); margin-bottom:10px;
+  }
+  .grid-tile .t{font-weight:600; font-size:13.5px;}
+
+  section.block{margin-bottom:26px;}
+  section.block h2{
+    font-family:'Bungee', sans-serif;
+    font-weight:500; font-size:12.5px; margin:0 0 14px;
+    letter-spacing:.03em; text-transform:uppercase; color:var(--text-dim);
+  }
+
+  label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:6px;}
+  input[type=text], input[type=number], input[type=password], input[type=email], textarea, select{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'Archivo', sans-serif;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:10px;
+  }
+  input:focus, textarea:focus{outline:none; border-color:var(--purple);}
+  textarea{resize:vertical; min-height:60px;}
+  .field{margin-bottom:14px;}
+  .field-row{display:flex; gap:12px;}
+  .field-row .field{flex:1;}
+
+  .tabs-pill{display:flex; gap:6px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:16px;}
+  .tabs-pill .tab{
+    flex:1; text-align:center; padding:8px 4px; border-radius:9px;
+    font-size:12.5px; color:var(--text-dim); cursor:pointer;
+  }
+  .tabs-pill .tab.active{background:linear-gradient(120deg, var(--metal-1), var(--metal-3)); color:#0A0A0C; font-weight:600;}
+
+  button.primary-btn{
+    width:100%;
+    background:linear-gradient(120deg, var(--metal-2), var(--metal-3) 25%, var(--metal-1) 45%, var(--metal-deep) 65%, var(--metal-3) 85%, var(--metal-2));
+    background-size:250% 100%;
+    animation:shine 6s ease-in-out infinite;
+    color:#0A0A0C;
+    border:none;
+    font-weight:600;
+    font-size:14px;
+    padding:14px;
+    border-radius:14px;
+    cursor:pointer;
+    margin-top:4px;
+    font-family:'Archivo', sans-serif;
+    transition:transform .15s ease, box-shadow .15s ease;
+    box-shadow:0 6px 24px rgba(220,222,227,.12);
+  }
+  button.primary-btn:active{transform:scale(.97); box-shadow:0 2px 10px rgba(220,222,227,.08);}
+  button.ghost-btn{
+    width:100%;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text);
+    font-weight:500;
+    font-size:13.5px;
+    padding:12px;
+    border-radius:12px;
+    cursor:pointer;
+    margin-top:4px;
+  }
+
+  .recipe-card{display:flex; gap:14px; align-items:flex-start;}
+  .recipe-card .swatch{
+    width:64px; height:64px; border-radius:14px; flex-shrink:0;
+    background:var(--panel-2); display:flex; align-items:center; justify-content:center;
+    color:var(--purple-2); overflow:hidden; border:1px solid var(--line-soft);
+  }
+  .recipe-card .swatch img{width:100%; height:100%; object-fit:cover; display:block;}
+  .recipe-card .rc-title{font-weight:600; font-size:14px; margin:0;}
+  .recipe-card .rc-meta{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-dim); margin:4px 0 6px;}
+  .recipe-card .rc-desc{font-size:12.5px; color:var(--text-dim); margin:0; line-height:1.5;}
+  .tag{display:inline-block; font-family:'Permanent Marker', cursive; font-size:11px; letter-spacing:.02em; color:#0A0A0C; background:linear-gradient(100deg, var(--holo-1), var(--holo-2), var(--holo-3)); padding:3px 10px; border-radius:20px; margin-bottom:6px; transform:rotate(-3deg); display:inline-block; box-shadow:2px 2px 0 rgba(0,0,0,.35);}
+
+  .article-card .a-title{font-weight:600; font-size:14px; margin:0 0 4px;}
+  .article-card .a-desc{font-size:12.5px; color:var(--text-dim); margin:0; line-height:1.55;}
+  .sci-section{margin-top:12px;}
+  .sci-label{font-family:'IBM Plex Mono', monospace; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--holo-2); margin:0 0 4px;}
+  .sci-text{font-size:12.5px; color:var(--text-dim); margin:0; line-height:1.55;}
+  .sci-vars{display:flex; flex-wrap:wrap; gap:6px; margin-top:2px;}
+  .sci-var-chip{font-size:11px; padding:3px 9px; border-radius:20px; background:var(--panel-2); border:1px solid var(--line); color:var(--text);}
+
+  .post-card .p-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .avatar{width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, var(--purple-2), var(--purple-deep)); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; color:#0B0912;}
+  .p-name{font-weight:600; font-size:13.5px; margin:0;}
+  .p-meta{font-size:11px; color:var(--text-faint); margin:0;}
+  .p-text{font-size:13.5px; color:var(--text); line-height:1.55; margin:0 0 10px;}
+  .p-actions{display:flex; gap:16px; color:var(--text-dim); font-size:12px;}
+  .p-actions span{display:flex; align-items:center; gap:5px;}
+
+  .navbar{
+    position:fixed; bottom:0; left:0; right:0;
+    display:flex; justify-content:center;
+    padding:0 0 14px;
+    pointer-events:none;
+  }
+  .navbar-inner{
+    pointer-events:all;
+    width:100%; max-width:460px;
+    margin:0 20px;
+    background:rgba(19,19,22,.6);
+    backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+    border:1px solid rgba(237,238,241,.1);
+    border-radius:22px;
+    display:flex; align-items:center; justify-content:space-around;
+    padding:10px 6px;
+    box-shadow:0 8px 32px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .nav-item{display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-faint); cursor:pointer; font-size:9.5px; padding:2px 8px;}
+  .nav-item.active{color:var(--purple-2);}
+  .nav-item .icon svg{width:20px; height:20px;}
+  .nav-item.mid{margin-top:-22px;}
+  .nav-item.mid .fab{width:46px; height:46px;}
+
+  .aroma-chip{
+    font-size:12.5px; padding:8px 13px; border-radius:20px;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    cursor:pointer;
+  }
+  .aroma-chip.active{background:var(--purple); border-color:var(--purple); color:#fff; font-weight:500;}
+  .aroma-slice{cursor:pointer; stroke:var(--bg); stroke-width:2; transition:opacity .15s;}
+  .aroma-slice:hover{opacity:.85;}
+  .aroma-slice.active{opacity:1; stroke:#fff; stroke-width:2.5;}
+  .aroma-label{font-family:'Archivo', sans-serif; font-size:9.5px; font-weight:600; fill:#0B0912; pointer-events:none; text-anchor:middle;}
+
+  .paper-list{display:flex; flex-direction:column; gap:12px;}
+  .paper-card{
+    display:block; text-decoration:none; color:var(--text);
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:16px; transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    position:relative; overflow:hidden;
+  }
+  .paper-card:active{transform:scale(.97); border-color:rgba(237,238,241,.3); box-shadow:0 0 24px rgba(220,222,227,.1);}
+  .paper-card .src{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--purple-2); margin:0 0 6px;
+  }
+  .paper-card .pt{font-weight:600; font-size:14px; margin:0 0 4px; line-height:1.35;}
+  .paper-card .pd{font-size:12.5px; color:var(--text-dim); margin:0; font-weight:300; line-height:1.5;}
+  .paper-card .go{position:absolute; top:16px; right:16px; color:var(--text-faint);}
+
+  .empty-note{font-size:12.5px; color:var(--text-dim); text-align:center; padding:20px 10px;}
+  .toast{
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+    background:var(--panel-2); border:1px solid var(--purple); color:var(--text);
+    padding:10px 18px; border-radius:12px; font-size:13px; opacity:0; transition:opacity .25s;
+    z-index:50; pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="aurora"><span></span><span></span><span></span></div>
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="logo" style="margin:0 auto 18px; align-items:center; transform:rotate(-3deg);">
+      <span class="num">1312</span>
+      <span class="sub">COFFEE LAB</span>
+    </div>
+
+    <div id="authLoginPanel">
+      <p class="eyebrow" style="text-align:center;">Iniciar sesión</p>
+      <label>Usuario</label>
+      <input type="text" id="loginUser" placeholder="tu usuario" autocomplete="username">
+      <label style="margin-top:10px;">Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+      <p class="auth-error" id="loginError"></p>
+      <button class="primary-btn" id="loginBtn" style="margin-top:14px;">Entrar</button>
+      <p class="auth-switch">¿No tenés cuenta? <a id="goToSignup">Creá una</a></p>
+    </div>
+
+    <div id="authSignupPanel" style="display:none;">
+      <p class="eyebrow" style="text-align:center;">Crear cuenta</p>
+      <label>Usuario</label>
+      <input type="text" id="signupUser" placeholder="elegí un usuario">
+      <label style="margin-top:10px;">Email (opcional)</label>
+      <input type="email" id="signupEmail" placeholder="tu@email.com">
+      <label style="margin-top:10px;">Contraseña</label>
+      <input type="password" id="signupPass" placeholder="mínimo 8 caracteres">
+      <label style="margin-top:10px;">Repetir contraseña</label>
+      <input type="password" id="signupPass2" placeholder="••••••••">
+      <p class="auth-error" id="signupError"></p>
+      <button class="primary-btn" id="signupBtn" style="margin-top:14px;">Crear cuenta</button>
+      <p class="auth-switch">¿Ya tenés cuenta? <a id="goToLogin">Iniciá sesión</a></p>
+    </div>
+
+    <p class="auth-hint">¿Primera vez en este dispositivo? Iniciá sesión con el usuario <b>admin</b> para entrar como administrador, o creá tu propia cuenta.</p>
+    </div>
+</div>
+
+<div class="shell">
+
+  <div class="topbar">
+    <div class="logo"><span class="num">1312</span><span class="sub">COFFEE LAB</span></div>
+    <div class="icon-btn" id="bellBtn"><span class="icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 6-3 8-3 8h18s-3-2-3-8"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span></div>
+  </div>
+
+  <main>
+
+    <!-- INICIO -->
+    <div class="view show" id="view-inicio">
+      <h1 class="greet" id="greetName">Hola Jeremías,</h1>
+      <p class="hint">¿Qué vas a explorar hoy?</p>
+
+      <div class="card grad card-row" id="quickRegisterBtn" style="cursor:pointer;">
+        <div>
+          <p class="card-title">Registro rápido</p>
+          <p class="card-sub">Registrá tu extracción en segundos</p>
+        </div>
+        <div class="fab"><span class="icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span></div>
+      </div>
+
+      <div class="card" id="todayCard">
+        <p class="eyebrow">Tu extracción del día</p>
+        <div id="todaySummary"></div>
+      </div>
+
+      <section class="block">
+        <h2>Explorar</h2>
+        <div class="grid-2">
+          <div class="grid-tile" data-nav="recetas">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 8h13v6a5 5 0 01-5 5H8a5 5 0 01-5-5V8z"/><path d="M16 8h2a3 3 0 010 6h-2"/></svg></span></div>
+            <div class="t">Recetas</div>
+          </div>
+          <div class="grid-tile" data-nav="cafes">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="15" rx="2"/><path d="M3 9h18"/></svg></span></div>
+            <div class="t">Cafés</div>
+          </div>
+          <div class="grid-tile" data-nav="tecnicas">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v6"/><path d="M8 8h8l2 12H6z"/></svg></span></div>
+            <div class="t">Técnicas</div>
+          </div>
+          <div class="grid-tile" data-nav="ciencia">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3"/></svg></span></div>
+            <div class="t">Ciencia</div>
+          </div>
+          <div class="grid-tile" data-nav="aromas">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg></span></div>
+            <div class="t">Aromas y sabores</div>
+          </div>
+          <div class="grid-tile" data-nav="papers">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></span></div>
+            <div class="t">Papers científicos</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- EXPLORAR -->
+    <div class="view" id="view-explorar">
+      <h1 class="greet">Explorar</h1>
+      <p class="hint">Recetas, cafés, técnicas y ciencia del café.</p>
+      <div class="grid-2">
+        <div class="grid-tile" data-nav="recetas">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 8h13v6a5 5 0 01-5 5H8a5 5 0 01-5-5V8z"/><path d="M16 8h2a3 3 0 010 6h-2"/></svg></span></div>
+          <div class="t">Recetas</div>
+        </div>
+        <div class="grid-tile" data-nav="cafes">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="15" rx="2"/><path d="M3 9h18"/></svg></span></div>
+          <div class="t">Cafés</div>
+        </div>
+        <div class="grid-tile" data-nav="tecnicas">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2v6"/><path d="M8 8h8l2 12H6z"/></svg></span></div>
+          <div class="t">Técnicas</div>
+        </div>
+        <div class="grid-tile" data-nav="ciencia">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3"/></svg></span></div>
+          <div class="t">Ciencia</div>
+        </div>
+        <div class="grid-tile" data-nav="aromas">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg></span></div>
+          <div class="t">Aromas y sabores</div>
+        </div>
+        <div class="grid-tile" data-nav="papers">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></span></div>
+          <div class="t">Papers científicos</div>
+        </div>
+      </div>
+      <div class="grid-tile" data-nav="analisis" style="margin-bottom:16px;">
+        <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M12 19V5"/><path d="M20 19v-7"/></svg></span></div>
+        <div class="t">Análisis</div>
+      </div>
+    </div>
+
+    <!-- REGISTRO -->
+    <div class="view" id="view-registro">
+      <h1 class="greet">Registro</h1>
+      <p class="hint">Guardá los datos de tu extracción.</p>
+
+      <div class="tabs-pill" id="regTypeTabs">
+        <div class="tab active" data-type="Espresso">Espresso</div>
+        <div class="tab" data-type="Filtro">Filtro</div>
+        <div class="tab" data-type="Cold Brew">Cold Brew</div>
+        <div class="tab" data-type="Otros">Otros</div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label for="rCafe">Café</label>
+          <input type="text" id="rCafe" placeholder="Ej. Ethiopia · Guji · Washed">
+        </div>
+        <div class="field">
+          <label for="rMolinillo">Molinillo</label>
+          <input type="text" id="rMolinillo" placeholder="Ej. EK43, punto de molienda">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="rDosis">Dosis (g)</label>
+            <input type="number" id="rDosis" step="0.1" placeholder="20.0">
+          </div>
+          <div class="field">
+            <label for="rRendimiento">Rendimiento (g)</label>
+            <input type="number" id="rRendimiento" step="0.1" placeholder="42.0">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="rTiempo">Tiempo (s)</label>
+            <input type="number" id="rTiempo" step="1" placeholder="28">
+          </div>
+          <div class="field">
+            <label for="rTemp">Temperatura (°C)</label>
+            <input type="number" id="rTemp" step="0.5" placeholder="93">
+          </div>
+        </div>
+        <div class="field">
+          <label for="rTds">TDS (%) · opcional, con refractómetro</label>
+          <input type="number" id="rTds" step="0.01" placeholder="Ej. 10.2">
+        </div>
+        <button class="ghost-btn" id="btConnectBtn" style="margin-top:2px; font-size:12px; padding:8px 12px;" disabled title="Próximamente">
+          📶 Conectar refractómetro Bluetooth (próximamente)
+        </button>
+        <div id="tdsPreviewBox" style="display:none; margin-top:10px;">
+          <p class="card-sub" id="tdsPreviewText" style="font-family:'IBM Plex Mono',monospace;"></p>
+          <p class="card-sub" style="font-size:11px; color:var(--text-faint);">Estimación estadística — no reemplaza la medición con refractómetro.</p>
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label for="rTueste">Nivel de tueste (opcional, mejora la estimación)</label>
+          <select id="rTueste">
+            <option value="">Sin especificar</option>
+            <option value="claro">Claro</option>
+            <option value="medio">Medio</option>
+            <option value="oscuro">Oscuro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rNotas">Notas</label>
+          <textarea id="rNotas" placeholder="Frutal, floral, cítrico..."></textarea>
+        </div>
+        <div class="card-row" style="margin-bottom:4px;">
+          <span class="eyebrow" style="margin:0;">Ratio en vivo</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--purple-2);" id="rRatioLive">1:0</span>
+        </div>
+        <button class="primary-btn" id="saveRegBtn">Guardar extracción</button>
+      </div>
+    </div>
+
+    <!-- ANALISIS -->
+    <div class="view" id="view-analisis">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="inicio"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Análisis</h1>
+      </div>
+      <p class="hint">Basado en tu extracción más reciente.</p>
+      <div class="card" id="analisisCard"></div>
+      <div class="card">
+        <p class="eyebrow">Extracción en el tiempo</p>
+        <svg id="analisisChart" viewBox="0 0 300 130" width="100%" height="130"></svg>
+        <p class="empty-note" id="chartEmptyNote" style="display:none;">Cargá el TDS al registrar extracciones para ver esta curva.</p>
+      </div>
+    </div>
+
+    <!-- RECETAS -->
+    <div class="view" id="view-recetas">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Recetas</h1>
+      </div>
+      <p class="hint">Buscá o filtrá por método.</p>
+      <div class="field">
+        <input type="text" id="recSearch" placeholder="Buscar recetas...">
+      </div>
+      <div class="tabs-pill" id="recTypeTabs">
+        <div class="tab active" data-type="Todas">Todas</div>
+        <div class="tab" data-type="Espresso">Espresso</div>
+        <div class="tab" data-type="Filtro">Filtro</div>
+        <div class="tab" data-type="Cold Brew">Cold Brew</div>
+      </div>
+      <div id="recetasList"></div>
+      <button class="ghost-btn" id="addRecipeBtn" data-nav="nueva-receta">+ Nueva receta</button>
+    </div>
+
+    <!-- NUEVA RECETA -->
+    <div class="view" id="view-nueva-receta">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="recetas"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Nueva receta</h1>
+      </div>
+      <p class="hint">Se publica con tu usuario y queda visible para todos.</p>
+      <div class="card">
+        <label>Nombre</label>
+        <input type="text" id="nrNombre" placeholder="ej. Mi V60 dulce">
+        <label style="margin-top:10px;">Método</label>
+        <select id="nrMetodo">
+          <option>Espresso</option>
+          <option>Filtro</option>
+          <option>Cold Brew</option>
+        </select>
+        <label style="margin-top:10px;">Café (opcional)</label>
+        <input type="text" id="nrCafe" placeholder="ej. Etiopía Yirgacheffe">
+        <label style="margin-top:10px;">Molienda (opcional)</label>
+        <input type="text" id="nrMolienda" placeholder="ej. Media-fina">
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="flex:1;">
+            <label>Dosis (g)</label>
+            <input type="number" id="nrDosis" placeholder="18">
+          </div>
+          <div style="flex:1;">
+            <label>Agua (g)</label>
+            <input type="number" id="nrAgua" placeholder="270">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="flex:1;">
+            <label>Temperatura (°C)</label>
+            <input type="number" id="nrTemp" placeholder="93">
+          </div>
+          <div style="flex:1;">
+            <label>Tiempo (seg)</label>
+            <input type="number" id="nrTiempo" placeholder="150">
+          </div>
+        </div>
+        <label style="margin-top:10px;">Ratio (opcional, si no se calcula solo)</label>
+        <input type="text" id="nrRatio" placeholder="1:15">
+        <label style="margin-top:10px;">Pasos</label>
+        <textarea id="nrPasos" placeholder="1. Bloom 30s... 2. Vertido en espiral..."></textarea>
+        <label style="margin-top:10px;">Notas</label>
+        <textarea id="nrNotas" placeholder="Notas de sabor, ajustes probados, etc."></textarea>
+        <p class="auth-error" id="nrError"></p>
+        <button class="primary-btn" id="nrSubmitBtn" style="margin-top:14px;">Publicar receta</button>
+      </div>
+    </div>
+
+    <!-- EDITAR RECETA -->
+    <div class="view" id="view-editar-receta">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="recetas"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Editar receta</h1>
+      </div>
+      <p class="hint">Los cambios se guardan sobre esta misma versión.</p>
+      <div class="card">
+        <label>Nombre</label>
+        <input type="text" id="erNombre">
+        <label style="margin-top:10px;">Método</label>
+        <select id="erMetodo">
+          <option>Espresso</option>
+          <option>Filtro</option>
+          <option>Cold Brew</option>
+        </select>
+        <label style="margin-top:10px;">Café (opcional)</label>
+        <input type="text" id="erCafe">
+        <label style="margin-top:10px;">Molienda (opcional)</label>
+        <input type="text" id="erMolienda">
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="flex:1;">
+            <label>Dosis (g)</label>
+            <input type="number" id="erDosis">
+          </div>
+          <div style="flex:1;">
+            <label>Agua (g)</label>
+            <input type="number" id="erAgua">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="flex:1;">
+            <label>Temperatura (°C)</label>
+            <input type="number" id="erTemp">
+          </div>
+          <div style="flex:1;">
+            <label>Tiempo (seg)</label>
+            <input type="number" id="erTiempo">
+          </div>
+        </div>
+        <label style="margin-top:10px;">Ratio</label>
+        <input type="text" id="erRatio">
+        <label style="margin-top:10px;">Pasos</label>
+        <textarea id="erPasos"></textarea>
+        <label style="margin-top:10px;">Notas / resultados obtenidos</label>
+        <textarea id="erNotas"></textarea>
+        <p class="auth-error" id="erError"></p>
+        <button class="primary-btn" id="erSubmitBtn" style="margin-top:14px;">Guardar cambios</button>
+      </div>
+    </div>
+
+    <!-- CIENCIA -->
+    <div class="view" id="view-ciencia">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Ciencia</h1>
+      </div>
+      <p class="hint">Concepto → variables → evidencia → aplicación práctica.</p>
+      <div id="cienciaList"></div>
+    </div>
+
+    <!-- AROMAS Y SABORES -->
+    <div class="view" id="view-aromas">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Aromas y sabores</h1>
+      </div>
+      <p class="hint">Tocá una categoría de la rueda y después una nota para ver su descripción técnica.</p>
+      <div class="card" style="display:flex; justify-content:center; padding:14px;">
+        <svg id="aromaWheel" viewBox="0 0 300 300" width="100%" style="max-width:320px;"></svg>
+      </div>
+      <div class="card" id="aromaNotesCard" style="display:none;">
+        <p class="eyebrow" id="aromaCatLabel">Categoría</p>
+        <div id="aromaNotesList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+      <div class="card grad" id="aromaDetailCard" style="display:none;">
+        <p class="eyebrow" id="aromaDetailLabel">Nota</p>
+        <p class="card-title" id="aromaDetailTitle" style="margin-bottom:8px;"></p>
+        <p class="a-desc" id="aromaDetailDesc" style="font-size:13px; line-height:1.6;"></p>
+      </div>
+      <p class="empty-note" id="aromaEmptyNote">Seleccioná una categoría en la rueda para empezar.</p>
+    </div>
+
+    <!-- PAPERS CIENTÍFICOS -->
+    <div class="view" id="view-papers">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Papers científicos</h1>
+      </div>
+      <p class="hint">Fuentes de investigación especializada sobre café: ciencia de la extracción, sensorial y agronomía.</p>
+      <div class="paper-list"></div>
+    </div>
+
+    <!-- CAFES -->
+    <div class="view" id="view-cafes">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Cafés</h1>
+      </div>
+      <p class="hint">Guía rápida por origen.</p>
+      <div id="cafesList"></div>
+      <p class="eyebrow" style="margin-top:22px;">Fincas de referencia mundial</p>
+      <div id="fincasPrestigiosasList"></div>
+      <p class="eyebrow" style="margin-top:22px;">Fichas de la comunidad</p>
+      <div id="fichasCafeList"></div>
+      <button class="ghost-btn" id="addCoffeeBtn" data-nav="nuevo-cafe">+ Agregar ficha de café</button>
+    </div>
+
+    <!-- NUEVA FICHA DE CAFE -->
+    <div class="view" id="view-nuevo-cafe">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="cafes"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Ficha de café</h1>
+      </div>
+      <p class="hint">Se publica con tu usuario y queda visible para todos.</p>
+      <div class="card">
+        <label>Nombre</label>
+        <input type="text" id="ncNombre" placeholder="ej. Finca La Esperanza">
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="flex:1;">
+            <label>País</label>
+            <input type="text" id="ncPais" placeholder="Colombia">
+          </div>
+          <div style="flex:1;">
+            <label>Región</label>
+            <input type="text" id="ncRegion" placeholder="Huila">
+          </div>
+        </div>
+        <label style="margin-top:10px;">Origen / Finca</label>
+        <input type="text" id="ncOrigen" placeholder="ej. Finca La Esperanza">
+        <label style="margin-top:10px;">Productor</label>
+        <input type="text" id="ncProductor" placeholder="ej. Familia Rodríguez">
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="flex:1;">
+            <label>Variedad</label>
+            <input type="text" id="ncVariedad" placeholder="Caturra">
+          </div>
+          <div style="flex:1;">
+            <label>Proceso</label>
+            <input type="text" id="ncProceso" placeholder="Lavado">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <div style="flex:1;">
+            <label>Altitud (msnm)</label>
+            <input type="number" id="ncAltitud" placeholder="1800">
+          </div>
+          <div style="flex:1;">
+            <label>Tueste</label>
+            <input type="text" id="ncTueste" placeholder="Claro">
+          </div>
+        </div>
+        <label style="margin-top:10px;">Notas sensoriales</label>
+        <textarea id="ncNotas" placeholder="Notas de cata: acidez, dulzor, cuerpo, notas de sabor..."></textarea>
+        <p class="auth-error" id="ncError"></p>
+        <button class="primary-btn" id="ncSubmitBtn" style="margin-top:14px;">Publicar ficha</button>
+      </div>
+    </div>
+
+    <!-- TECNICAS -->
+    <div class="view" id="view-tecnicas">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Técnicas</h1>
+      </div>
+      <p class="hint">Fundamentos de barra, con la ciencia detrás de cada uno.</p>
+      <div id="tecnicasList"></div>
+    </div>
+
+    <!-- COMUNIDAD -->
+    <div class="view" id="view-comunidad">
+      <h1 class="greet">Comunidad</h1>
+      <p class="hint">Extracciones publicadas por otros usuarios — probalas, compará resultados y comentá.</p>
+      <button class="primary-btn" id="publicarExtraccionBtn" style="margin-bottom:16px;">Publicar mi última extracción</button>
+      <div id="comunidadList"></div>
+    </div>
+
+    <!-- PERFIL -->
+    <div class="view" id="view-perfil">
+      <h1 class="greet">Perfil</h1>
+      <div class="card" style="display:flex; align-items:center; gap:14px;">
+        <div class="avatar" style="width:52px; height:52px; font-size:16px;" id="perfilAvatar">J</div>
+        <div>
+          <p class="card-title" id="perfilNombre">Jeremías</p>
+          <p class="card-sub" id="perfilRol">Barista experto</p>
+        </div>
+        <button class="primary-btn" id="logoutBtn" style="width:auto; margin-left:auto; padding:8px 14px; font-size:12px;">Salir</button>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Tu actividad</p>
+        <div class="stat-row" id="perfilStats"></div>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Cambiar contraseña</p>
+        <label>Contraseña actual</label>
+        <input type="password" id="perfilCurrentPass" placeholder="tu contraseña actual">
+        <label style="margin-top:10px;">Nueva contraseña</label>
+        <input type="password" id="perfilNewPass" placeholder="mínimo 8 caracteres">
+        <p class="auth-error" id="perfilPassError"></p>
+        <button class="primary-btn" id="perfilChangePassBtn" style="margin-top:10px;">Actualizar contraseña</button>
+      </div>
+      <div class="card grad" id="adminEntryCard" style="display:none; cursor:pointer;" data-nav="admin">
+        <p class="eyebrow">Acceso especial</p>
+        <p class="card-title">Panel de administrador</p>
+        <p class="card-sub">Gestioná usuarios registrados y los datos de la app.</p>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="view" id="view-admin">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="perfil"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Administrador</h1>
+      </div>
+      <p class="hint">Gestión de usuarios registrados y de los datos guardados en este dispositivo.</p>
+
+      <div class="card">
+        <p class="eyebrow">Resumen</p>
+        <div class="stat-row" id="adminStats"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Usuarios registrados</p>
+        <div id="adminUserList" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <div class="card grad">
+        <p class="eyebrow">Zona de riesgo</p>
+        <p class="card-sub" style="margin-bottom:12px;">Borra todas las extracciones y recetas guardadas en este dispositivo. No afecta a los usuarios registrados.</p>
+        <button class="primary-btn" id="adminResetDataBtn">Borrar datos locales de la app</button>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="navbar"><div class="navbar-inner">
+    <div class="nav-item active" data-nav="inicio">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span>Inicio
+    </div>
+    <div class="nav-item" data-nav="explorar">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>Explorar
+    </div>
+    <div class="nav-item mid" data-nav="registro"><div class="fab"><span class="icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span></div></div>
+    <div class="nav-item" data-nav="comunidad">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5S15.5 16.5 15.5 20"/><circle cx="17" cy="9" r="2.5"/><path d="M15 14.5c2.8.3 5 2 5 5.5"/></svg></span>Comunidad
+    </div>
+    <div class="nav-item" data-nav="perfil">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>Perfil
+    </div>
+  </div></div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+(function(){
+
+  // ---------- API (backend real) ----------
+  // Cuando despliegues el backend (Render/Railway), cambiá esta constante
+  // por la URL pública, ej: 'https://coffee-lab-api.onrender.com/api'
+  // ---------- Seguridad: escape de HTML ----------
+  // Todo texto que viene de otro usuario (recetas, comentarios, fichas de
+  // café, nombres de usuario) se interpola en el DOM vía innerHTML — sin
+  // esto, cualquiera podría publicar una receta con <script> o un
+  // manejador de evento y ejecutar código en el navegador de otro
+  // usuario. Se aplica a TODO contenido que no sea texto fijo escrito acá.
+  function esc(str){
+    if(str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  const API_BASE = 'http://localhost:4000/api';
+
+  function getToken(){ return window.localStorage.getItem('1312coffeelab_token'); }
+  function setToken(t){ window.localStorage.setItem('1312coffeelab_token', t); }
+  function clearToken(){ window.localStorage.removeItem('1312coffeelab_token'); }
+
+  async function apiFetch(path, options = {}){
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    const token = getToken();
+    if(token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    let data = null;
+    try{ data = await res.json(); } catch(e){ /* respuestas 204 sin body */ }
+    if(!res.ok){
+      const err = new Error((data && data.error) || 'Error de conexión con el servidor.');
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  // ---------- Storage helpers (localStorage: funciona offline en la app nativa) ----------
+  async function loadJSON(key, fallback){
+    try{
+      const raw = window.localStorage.getItem('1312coffeelab_' + key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(e){ return fallback; }
+  }
+  async function saveJSON(key, value){
+    try{ window.localStorage.setItem('1312coffeelab_' + key, JSON.stringify(value)); }
+    catch(e){ console.error('storage error', e); }
+  }
+
+  let extracciones = [];
+  let recetasCustom = [];
+
+  // ---------- Navigation ----------
+  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas' };
+  const navTabs = ['inicio','explorar','registro','comunidad','perfil'];
+
+  function showView(name){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('show'));
+    const el = document.getElementById('view-' + name);
+    if(el) el.classList.add('show');
+    document.querySelectorAll('.nav-item').forEach(n=>{
+      n.classList.toggle('active', n.dataset.nav === name && navTabs.includes(name));
+    });
+    if(name === 'analisis') renderAnalisis();
+    if(name === 'perfil') renderPerfil();
+    if(name === 'admin') renderAdmin();
+    if(name === 'comunidad') renderComunidad();
+    if(name === 'cafes') renderFichasCafe();
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.addEventListener('click', ()=> showView(el.dataset.nav));
+  });
+  document.querySelectorAll('[data-back]').forEach(el=>{
+    el.addEventListener('click', ()=> showView(el.dataset.back));
+  });
+  document.getElementById('quickRegisterBtn').addEventListener('click', ()=> showView('registro'));
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 1800);
+  }
+
+  // ---------- Extraction math ----------
+  function computeEY(entry){
+    if(entry.tds && entry.dosis){
+      return (entry.tds/100 * entry.rendimiento) / entry.dosis * 100;
+    }
+    return null;
+  }
+  function zoneFromEY(ey){
+    if(ey === null) return null;
+    if(ey < 18) return 'sub';
+    if(ey > 22) return 'sobre';
+    return 'ideal';
+  }
+  function zoneFromRatioTime(entry){
+    const ratio = entry.rendimiento / entry.dosis;
+    // heuristic without TDS: compare to typical espresso window
+    if(entry.tipo === 'Espresso'){
+      if(entry.tiempo && entry.tiempo < 20) return 'sub';
+      if(entry.tiempo && entry.tiempo > 35) return 'sobre';
+      return 'ideal';
+    }
+    return 'ideal';
+  }
+
+  // ---------- INICIO: today card ----------
+  async function loadExtracciones(){
+    try{ extracciones = await apiFetch('/extractions'); }
+    catch(e){ extracciones = []; }
+  }
+
+  function renderToday(){
+    const box = document.getElementById('todaySummary');
+    if(!sessionUser){ box.innerHTML = '<p class="empty-note">Iniciá sesión para ver tus extracciones.</p>'; return; }
+    if(extracciones.length === 0){
+      box.innerHTML = '<p class="empty-note">Todavía no registraste ninguna extracción.</p>';
+      return;
+    }
+    const last = extracciones[0]; // la API las devuelve más recientes primero
+    const ratio = last.ratio || `1:${(last.aguaG/last.dosisG).toFixed(1)}`;
+    const zoneClass = last.categoria === 'Balanceado (Golden Cup)' ? 'good' : last.categoria ? 'warn' : '';
+    const tdsLabel = last.tds
+      ? `${last.tds}%${last.tdsEstimado ? ' (estimado)' : ''}`
+      : '—';
+    box.innerHTML = `
+      <p class="card-sub" style="margin-top:2px;">${last.metodo} · ${last.dosisG}g</p>
+      <div class="ratio-big">${ratio}</div>
+      ${last.categoria ? `<span class="status-pill ${zoneClass}"><span class="dot"></span>${last.categoria}</span>` : ''}
+      <div class="stat-row">
+        <div class="stat"><div class="k">Agua</div><div class="v">${last.aguaG}g</div></div>
+        <div class="stat"><div class="k">TDS</div><div class="v">${tdsLabel}</div></div>
+        <div class="stat"><div class="k">Extracción</div><div class="v">${last.ey!==null && last.ey!==undefined ? last.ey.toFixed(1)+'%' : '—'}</div></div>
+      </div>
+      ${last.tdsEstimado ? `<p class="card-sub" style="font-size:11px; color:var(--text-faint); margin-top:8px;">TDS y extracción estimados estadísticamente (rango ${last.tdsRangoMin}–${last.tdsRangoMax}%, confianza ${last.tdsConfianzaLabel}) — no reemplaza al refractómetro.</p>` : ''}`;
+  }
+
+  // ---------- REGISTRO ----------
+  let regType = 'Espresso';
+  document.querySelectorAll('#regTypeTabs .tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('#regTypeTabs .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      regType = tab.dataset.type;
+    });
+  });
+  const rDosis = document.getElementById('rDosis');
+  const rRendimiento = document.getElementById('rRendimiento');
+  const rRatioLive = document.getElementById('rRatioLive');
+  function updateRatioLive(){
+    const d = parseFloat(rDosis.value), r = parseFloat(rRendimiento.value);
+    if(d>0 && r>0) rRatioLive.textContent = '1:' + (r/d).toFixed(1);
+    else rRatioLive.textContent = '1:0';
+  }
+  rDosis.addEventListener('input', updateRatioLive);
+  rRendimiento.addEventListener('input', updateRatioLive);
+
+  // ---------- Vista previa en vivo del TDS estimado ----------
+  // Motor de estimación: /api/tds/estimate. Nunca se usa si el usuario ya
+  // cargó un TDS medido — en ese caso el campo manda siempre.
+  let tdsPreviewTimer = null;
+  function scheduleTdsPreview(){
+    clearTimeout(tdsPreviewTimer);
+    tdsPreviewTimer = setTimeout(updateTdsPreview, 400);
+  }
+  async function updateTdsPreview(){
+    const box = document.getElementById('tdsPreviewBox');
+    const measured = document.getElementById('rTds').value;
+    if(measured){ box.style.display = 'none'; return; } // hay TDS real, no estimamos
+    const dosisG = parseFloat(rDosis.value);
+    const aguaG = parseFloat(rRendimiento.value);
+    if(!dosisG || !aguaG || !sessionUser){ box.style.display = 'none'; return; }
+    try{
+      const est = await apiFetch('/tds/estimate', { method:'POST', body: JSON.stringify({
+        metodo: regType,
+        dosisG, aguaG,
+        tiempoSeg: parseFloat(document.getElementById('rTiempo').value) || undefined,
+        tueste: document.getElementById('rTueste').value || undefined,
+      })});
+      const fmt = (n)=> n.toFixed(1).replace('.', ',');
+      document.getElementById('tdsPreviewText').textContent =
+        `TDS estimado ${fmt(est.estimado)}%, rango ${fmt(est.rangoMin)} a ${fmt(est.rangoMax)}% · confianza: ${est.confianzaLabel}`;
+      box.style.display = 'block';
+    }catch(e){ box.style.display = 'none'; }
+  }
+  [rDosis, rRendimiento, document.getElementById('rTiempo'), document.getElementById('rTueste'), document.getElementById('rTds')]
+    .forEach(el=> el.addEventListener('input', scheduleTdsPreview));
+  document.querySelectorAll('#regTypeTabs .tab').forEach(tab=> tab.addEventListener('click', scheduleTdsPreview));
+
+  // ---------- Refractómetro Bluetooth (preparado, sin hardware conectado aún) ----------
+  // Interfaz lista para cuando se sume soporte a un modelo real: la Web
+  // Bluetooth API solo funciona desde el navegador (no desde el backend),
+  // así que la conexión se haría acá. Falta el UUID de servicio/
+  // característica GATT específico del refractómetro elegido (varía por
+  // fabricante — VST, Atago, etc.), que se completa cuando se defina el
+  // hardware exacto a soportar. El botón queda deshabilitado hasta entonces.
+  async function connectBluetoothRefractometer(){
+    if(!navigator.bluetooth){
+      toast('Este navegador no soporta Bluetooth Web.');
+      return;
+    }
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        // optionalServices: ['UUID-DEL-SERVICIO-DEL-FABRICANTE'], // completar al integrar un modelo real
+      });
+      // A completar: conectar GATT, leer la característica de TDS del
+      // dispositivo, y volcar el valor real en document.getElementById('rTds').
+      toast(`Dispositivo detectado: ${device.name || 'sin nombre'}. Falta completar la lectura GATT real.`);
+    }catch(e){ toast('No se pudo conectar: ' + e.message); }
+  }
+  document.getElementById('btConnectBtn').addEventListener('click', connectBluetoothRefractometer);
+
+  document.getElementById('saveRegBtn').addEventListener('click', async ()=>{
+    if(!sessionUser){ toast('Iniciá sesión para guardar extracciones.'); return; }
+    const dosis = parseFloat(rDosis.value);
+    const rendimiento = parseFloat(rRendimiento.value);
+    if(!dosis || !rendimiento){
+      toast('Cargá al menos dosis y rendimiento');
+      return;
+    }
+    const cafe = document.getElementById('rCafe').value.trim();
+    const molinillo = document.getElementById('rMolinillo').value.trim();
+    const notas = document.getElementById('rNotas').value.trim();
+    try{
+      await apiFetch('/extractions', { method:'POST', body: JSON.stringify({
+        metodo: regType,
+        cafe: cafe || undefined,
+        molienda: molinillo || undefined,
+        dosisG: dosis,
+        aguaG: rendimiento,
+        tiempoSeg: parseFloat(document.getElementById('rTiempo').value) || undefined,
+        temperaturaC: parseFloat(document.getElementById('rTemp').value) || undefined,
+        tds: parseFloat(document.getElementById('rTds').value) || undefined,
+        tueste: document.getElementById('rTueste').value || undefined,
+        notas: notas || undefined,
+      })});
+      ['rCafe','rMolinillo','rDosis','rRendimiento','rTiempo','rTemp','rTds','rNotas'].forEach(id=>{
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('rTueste').value = '';
+      document.getElementById('tdsPreviewBox').style.display = 'none';
+      updateRatioLive();
+      toast('Extracción guardada');
+      await loadExtracciones();
+      renderToday();
+      showView('analisis');
+    }catch(e){ toast('No se pudo guardar: ' + e.message); }
+  });
+
+  // ---------- ANALISIS ----------
+  function renderAnalisis(){
+    const card = document.getElementById('analisisCard');
+    if(extracciones.length === 0){
+      card.innerHTML = '<p class="empty-note">Registrá una extracción para ver el análisis.</p>';
+    } else {
+      const last = extracciones[0];
+      const zoneClass = last.categoria === 'Balanceado (Golden Cup)' ? 'good' : 'warn';
+      const tdsLabel = last.tds ? `${last.tds}%${last.tdsEstimado ? ' (est.)' : ''}` : '—';
+      card.innerHTML = `
+        <div class="stat-row">
+          <div class="stat"><div class="k">Extracción${last.tdsEstimado ? ' (est.)' : ''}</div><div class="v" style="color:${zoneClass==='good'?'var(--green)':'var(--red)'}; font-size:20px;">${last.ey!==null && last.ey!==undefined ? last.ey.toFixed(1)+'%' : '—'}</div></div>
+          <div class="stat"><div class="k">TDS</div><div class="v">${tdsLabel}</div></div>
+          <div class="stat"><div class="k">Ratio</div><div class="v">${last.ratio}</div></div>
+        </div>
+        ${last.categoria ? `<div class="status-pill ${zoneClass}" style="margin-top:14px;"><span class="dot"></span>${last.categoria}</div>` : ''}
+        ${last.recomendacion ? `<p class="card-sub" style="margin-top:12px; line-height:1.5;">${last.recomendacion}</p>` : ''}
+        ${last.tdsEstimado ? `<p class="card-sub" style="font-size:11px; color:var(--text-faint); margin-top:10px;">TDS estimado estadísticamente (rango ${last.tdsRangoMin}–${last.tdsRangoMax}%, confianza ${last.tdsConfianzaLabel}). No reemplaza la medición con refractómetro — cuando midas con uno, el motor se recalibra solo.</p>` : ''}`;
+    }
+    // chart
+    const withEY = extracciones.filter(e => e.ey !== null && e.ey !== undefined).slice(0, 10).reverse();
+    const svg = document.getElementById('analisisChart');
+    const emptyNote = document.getElementById('chartEmptyNote');
+    if(withEY.length < 2){
+      svg.innerHTML = '';
+      emptyNote.style.display = 'block';
+      return;
+    }
+    emptyNote.style.display = 'none';
+    const w=300, h=130, padL=28, padB=18, padT=10, padR=10;
+    const eys = withEY.map(e=>e.ey);
+    const min = Math.min(16, Math.floor(Math.min(...eys)));
+    const max = Math.max(24, Math.ceil(Math.max(...eys)));
+    const xStep = (w-padL-padR) / (withEY.length-1);
+    function xFor(i){ return padL + i*xStep; }
+    function yFor(v){ return padT + (h-padT-padB) * (1 - (v-min)/(max-min)); }
+    let path = '';
+    let dots = '';
+    withEY.forEach((e,i)=>{
+      const x = xFor(i), y = yFor(eys[i]);
+      path += (i===0?'M':'L') + x + ' ' + y + ' ';
+      dots += `<circle cx="${x}" cy="${y}" r="3.2" fill="#C7C9CF"/>`;
+    });
+    const zoneTop = yFor(22), zoneBot = yFor(18);
+    svg.innerHTML = `
+      <rect x="${padL}" y="${zoneTop}" width="${w-padL-padR}" height="${zoneBot-zoneTop}" fill="rgba(52,211,153,0.12)"/>
+      <line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" stroke="#2A2438" stroke-width="1"/>
+      <path d="${path}" fill="none" stroke="#C7C9CF" stroke-width="2"/>
+      ${dots}
+      <text x="2" y="${yFor(max)+4}" font-size="9" fill="#655D80">${max}%</text>
+      <text x="2" y="${yFor(min)+4}" font-size="9" fill="#655D80">${min}%</text>`;
+  }
+
+  // ---------- RECETAS ----------
+  const builtInRecetas = [
+    {tipo:'Espresso', nombre:'Ristretto', ratio:'1:1–1:1.5', meta:'15–20 s · 92–96°C', desc:'Más cuerpo y dulzor, menos amargor. Ideal para blends de tueste medio-oscuro.', img:'https://images.unsplash.com/photo-1583165278997-0250ea5d72e2?w=400&q=80&fm=jpg&fit=crop'},
+    {tipo:'Espresso', nombre:'Normale', ratio:'1:2', meta:'25–30 s · 92–96°C', desc:'El estándar de barra tradicional. Punto de partida para calibrar cualquier café.', img:'https://images.unsplash.com/photo-1610889556528-9a770e32642f?w=400&q=80&fm=jpg&fit=crop'},
+    {tipo:'Espresso', nombre:'Lungo', ratio:'1:3', meta:'30–40 s · 92–96°C', desc:'Más volumen en taza, mayor riesgo de amargor si se pasa de tiempo.', img:'https://images.unsplash.com/photo-1558416165-5fb04b79b0e7?w=400&q=80&fm=jpg&fit=crop'},
+    {tipo:'Filtro', nombre:'Goteo por lotes (Golden Cup, SCA)', ratio:'1:18 (55g/L ±10%)', meta:'4–8 min · 90.5–96.1°C', desc:'Estándar oficial de la SCA: TDS 1.15–1.35%, extracción 18–22%.', img:'https://images.unsplash.com/photo-1522825397800-ddf6405fc258?w=400&q=80&fm=jpg&fit=crop'},
+    {tipo:'Filtro', nombre:'Pour-over (V60)', ratio:'1:15–1:17', meta:'2:30–3:30 · 92–96°C', desc:'Guía habitual de especialidad. Ajustá el ratio según cuerpo y dulzor buscado.', img:'https://images.unsplash.com/photo-1522675397120-8cb88c83ac16?w=400&q=80&fm=jpg&fit=crop'},
+    {tipo:'Filtro', nombre:'Prensa francesa', ratio:'1:15–1:17', meta:'4:00 · 92–96°C', desc:'Inmersión total. El tiempo no depende de la dosis.', img:'https://images.unsplash.com/photo-1708127368781-cd5f069a90a5?w=400&q=80&fm=jpg&fit=crop'},
+    {tipo:'Cold Brew', nombre:'Cold Brew clásico', ratio:'1:8', meta:'12–24 h · agua fría o heladera', desc:'Molienda gruesa, infusión larga en frío. Diluí el concentrado al servir si usaste ratios más cargados.', img:'https://images.unsplash.com/photo-1759259639356-6eee63241869?w=400&q=80&fm=jpg&fit=crop'}
+  ];
+  let recActiveType = 'Todas';
+  let recSearch = '';
+
+  async function loadRecetas(){
+    try{
+      const api = await apiFetch('/recipes');
+      recetasCustom = api.map(r=>({
+        id: r.id,
+        authorId: r.authorId,
+        tipo: r.metodo,
+        nombre: r.nombre,
+        ratio: r.ratio || '',
+        meta: [r.tiempoSeg ? `${r.tiempoSeg}s` : null, r.temperaturaC ? `${r.temperaturaC}°C` : null].filter(Boolean).join(' · '),
+        desc: r.notas || r.pasos || '',
+        autor: r.author ? r.author.username : null,
+        raw: r, // datos completos, para precargar el formulario de edición
+      }));
+    }catch(e){ recetasCustom = []; }
+  }
+
+  function renderRecetas(){
+    const list = document.getElementById('recetasList');
+    const all = builtInRecetas.concat(recetasCustom);
+    const filtered = all.filter(r=>{
+      const matchType = recActiveType==='Todas' || r.tipo===recActiveType;
+      const matchSearch = r.nombre.toLowerCase().includes(recSearch.toLowerCase());
+      return matchType && matchSearch;
+    });
+    if(filtered.length===0){
+      list.innerHTML = '<p class="empty-note">No se encontraron recetas.</p>';
+      return;
+    }
+    list.innerHTML = filtered.map(r=>{
+      const isOwner = r.id && sessionUser && r.authorId === sessionUser.id;
+      return `
+      <div class="card recipe-card">
+        <div class="swatch">${r.img ? `<img src="${esc(r.img)}" alt="${esc(r.nombre)}" loading="lazy">` : `<span class="icon"><svg viewBox="0 0 24 24"><path d="M3 8h13v6a5 5 0 01-5 5H8a5 5 0 01-5-5V8z"/><path d="M16 8h2a3 3 0 010 6h-2"/></svg></span>`}</div>
+        <div style="flex:1;">
+          <span class="tag">${esc(r.tipo)}</span>
+          <p class="rc-title">${esc(r.nombre)}</p>
+          <p class="rc-meta">${esc(r.ratio)}${r.meta ? ' · '+esc(r.meta) : ''}</p>
+          <p class="rc-desc">${esc(r.desc)}</p>
+          ${r.autor ? `<p class="card-sub" style="margin-top:4px;">por ${esc(r.autor)}${r.raw && r.raw.version > 1 ? ' · v'+esc(r.raw.version) : ''}</p>` : ''}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          ${isOwner ? `<button class="icon-btn" data-edit-recipe="${r.id}" title="Editar">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span>
+          </button>` : ''}
+          ${r.id ? `<button class="icon-btn" data-duplicate-recipe="${r.id}" title="Duplicar y modificar">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M8 8h11v11H8z"/><path d="M5 16H4V4h12v1"/></svg></span>
+          </button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('[data-duplicate-recipe]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!sessionUser){ toast('Iniciá sesión para duplicar una receta.'); return; }
+        try{
+          await apiFetch(`/recipes/${btn.dataset.duplicateRecipe}/duplicar`, { method:'POST', body: JSON.stringify({}) });
+          await loadRecetas();
+          renderRecetas();
+          toast('Receta duplicada — ya podés editarla como versión propia.');
+        }catch(e){ toast('No se pudo duplicar: ' + e.message); }
+      });
+    });
+    document.querySelectorAll('[data-edit-recipe]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const receta = recetasCustom.find(r=>r.id === btn.dataset.editRecipe);
+        if(receta) openEditRecipe(receta.raw);
+      });
+    });
+  }
+  document.querySelectorAll('#recTypeTabs .tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('#recTypeTabs .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      recActiveType = tab.dataset.type;
+      renderRecetas();
+    });
+  });
+  document.getElementById('recSearch').addEventListener('input', (e)=>{
+    recSearch = e.target.value;
+    renderRecetas();
+  });
+  document.getElementById('nrSubmitBtn').addEventListener('click', async ()=>{
+    if(!sessionUser){ toast('Iniciá sesión para publicar una receta.'); return; }
+    const errEl = document.getElementById('nrError');
+    errEl.textContent = '';
+    const nombre = document.getElementById('nrNombre').value.trim();
+    if(!nombre){ errEl.textContent = 'Ponele un nombre a la receta.'; return; }
+    const dosisG = parseFloat(document.getElementById('nrDosis').value) || undefined;
+    const aguaG = parseFloat(document.getElementById('nrAgua').value) || undefined;
+    let ratio = document.getElementById('nrRatio').value.trim();
+    if(!ratio && dosisG && aguaG) ratio = `1:${(aguaG/dosisG).toFixed(1)}`;
+    try{
+      await apiFetch('/recipes', { method:'POST', body: JSON.stringify({
+        nombre,
+        metodo: document.getElementById('nrMetodo').value,
+        cafe: document.getElementById('nrCafe').value.trim() || undefined,
+        molienda: document.getElementById('nrMolienda').value.trim() || undefined,
+        dosisG, aguaG,
+        temperaturaC: parseFloat(document.getElementById('nrTemp').value) || undefined,
+        tiempoSeg: parseFloat(document.getElementById('nrTiempo').value) || undefined,
+        ratio: ratio || undefined,
+        pasos: document.getElementById('nrPasos').value.trim() || undefined,
+        notas: document.getElementById('nrNotas').value.trim() || undefined,
+      })});
+      ['nrNombre','nrCafe','nrMolienda','nrDosis','nrAgua','nrTemp','nrTiempo','nrRatio','nrPasos','nrNotas'].forEach(id=>{
+        document.getElementById(id).value = '';
+      });
+      await loadRecetas();
+      renderRecetas();
+      toast('Receta publicada');
+      showView('recetas');
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  // ---------- EDITAR RECETA ----------
+  let editingRecipeId = null;
+  function openEditRecipe(raw){
+    editingRecipeId = raw.id;
+    document.getElementById('erNombre').value = raw.nombre || '';
+    document.getElementById('erMetodo').value = raw.metodo || 'Espresso';
+    document.getElementById('erCafe').value = raw.cafe || '';
+    document.getElementById('erMolienda').value = raw.molienda || '';
+    document.getElementById('erDosis').value = raw.dosisG || '';
+    document.getElementById('erAgua').value = raw.aguaG || '';
+    document.getElementById('erTemp').value = raw.temperaturaC || '';
+    document.getElementById('erTiempo').value = raw.tiempoSeg || '';
+    document.getElementById('erRatio').value = raw.ratio || '';
+    document.getElementById('erPasos').value = raw.pasos || '';
+    document.getElementById('erNotas').value = raw.notas || '';
+    document.getElementById('erError').textContent = '';
+    showView('editar-receta');
+  }
+  document.getElementById('erSubmitBtn').addEventListener('click', async ()=>{
+    if(!editingRecipeId) return;
+    const errEl = document.getElementById('erError');
+    errEl.textContent = '';
+    const nombre = document.getElementById('erNombre').value.trim();
+    if(!nombre){ errEl.textContent = 'El nombre no puede quedar vacío.'; return; }
+    try{
+      await apiFetch(`/recipes/${editingRecipeId}`, { method:'PUT', body: JSON.stringify({
+        nombre,
+        metodo: document.getElementById('erMetodo').value,
+        cafe: document.getElementById('erCafe').value.trim() || null,
+        molienda: document.getElementById('erMolienda').value.trim() || null,
+        dosisG: parseFloat(document.getElementById('erDosis').value) || null,
+        aguaG: parseFloat(document.getElementById('erAgua').value) || null,
+        temperaturaC: parseFloat(document.getElementById('erTemp').value) || null,
+        tiempoSeg: parseFloat(document.getElementById('erTiempo').value) || null,
+        ratio: document.getElementById('erRatio').value.trim() || null,
+        pasos: document.getElementById('erPasos').value.trim() || null,
+        notas: document.getElementById('erNotas').value.trim() || null,
+      })});
+      await loadRecetas();
+      renderRecetas();
+      toast('Receta actualizada');
+      showView('recetas');
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  // ---------- CIENCIA ----------
+  const ciencia = [
+    {
+      concepto: 'Ácidos clorogénicos y percepción de acidez',
+      explicacion: 'El café verde contiene ácidos clorogénicos (hasta 8% de su peso seco) que durante el tueste se degradan parcialmente en ácidos quínico y cafeico. Estos son los principales responsables de la acidez percibida — no es "un" ácido, es una familia de compuestos que cambia de proporción según cuánto avanza el tueste.',
+      variables: ['Nivel de tueste', 'Tiempo de extracción', 'Temperatura del agua'],
+      evidencia: 'Un tueste más oscuro degrada más ácidos clorogénicos en compuestos menos ácidos al paladar — por eso los tuestes oscuros se perciben más suaves y menos brillantes, independientemente del origen del grano.',
+      aplicacion: 'Si buscás resaltar acidez frutal, un tueste claro conserva más ácidos clorogénicos intactos. Si un café te resulta demasiado ácido incluso con buena extracción, el tueste (no la receta) suele ser la variable a ajustar.'
+    },
+    {
+      concepto: 'Reacción de Maillard y caramelización',
+      explicacion: 'Durante el tueste, los azúcares reductores reaccionan con aminoácidos (reacción de Maillard) generando cientos de compuestos aromáticos nuevos — es la misma reacción química que dora el pan o sella una carne. En paralelo, la caramelización pura de azúcares (sin aminoácidos) aporta las notas a caramelo y melaza.',
+      variables: ['Curva de tueste', 'Tiempo total de tueste', 'Punto de segundo crack'],
+      evidencia: 'La reacción de Maillard se acelera fuertemente por encima de los 140-165°C — por eso el desarrollo post-primer-crack (donde el grano ya superó esa temperatura) es el tramo que más define el perfil de sabor final, más que el tiempo total de tueste.',
+      aplicacion: 'Notas a nuez, chocolate o caramelo indican buen desarrollo de Maillard — si tu café sabe "a cereal" o plano, casi siempre es un tueste con Maillard insuficiente, no un problema de tu extracción.'
+    },
+    {
+      concepto: 'Cinética de extracción: qué se disuelve primero',
+      explicacion: 'Los compuestos del café no se disuelven todos al mismo tiempo: los ácidos y azúcares simples (bajo peso molecular) se disuelven primero y rápido; los compuestos amargos y astringentes (moléculas más grandes, como algunos derivados de la degradación de ácidos clorogénicos) requieren más tiempo de contacto para extraerse.',
+      variables: ['Tiempo de contacto', 'Temperatura', 'Tamaño de partícula'],
+      evidencia: 'Es la base física de por qué la subextracción sabe ácida/salada y la sobreextracción sabe amarga/astringente: en la subextracción solo alcanzaron a disolverse los compuestos rápidos; en la sobreextracción ya se sumaron los lentos, tapando a los demás.',
+      aplicacion: 'Cuando algo sale ácido y aguado a la vez (subextracción), la solución casi nunca es "más café" — es más tiempo de contacto o molienda más fina, para darle tiempo a los compuestos lentos de sumarse.'
+    },
+    {
+      concepto: 'Distribución del tamaño de partícula (no un número único)',
+      explicacion: 'Ningún molinillo produce partículas de un solo tamaño: produce una distribución estadística, con una moda (el tamaño más común) y una cola de finos y gruesos. Esa distribución, no el "número" del molinillo, es lo que realmente determina la extracción.',
+      variables: ['Calidad y filo de las muelas', 'Velocidad de molienda', 'Uniformidad del molinillo'],
+      evidencia: 'Los finos en exceso se sobreextraen rápido (mucha superficie de contacto en poco tiempo) mientras los gruesos de la misma molienda quedan subextraídos — la taza final mezcla ambos defectos, que es exactamente lo que describe la teoría de extracción dispareja.',
+      aplicacion: 'Un molinillo de mejor calidad (muelas más uniformes) mejora la taza más que casi cualquier otro cambio de equipo, porque angosta esa distribución en vez de solo cambiar el promedio.'
+    },
+    {
+      concepto: 'CO2 y la estructura porosa del grano tostado',
+      explicacion: 'El tueste genera CO2 que queda atrapado en la estructura porosa del grano — hasta 2% del peso del café en los primeros días. Este gas escapa gradualmente (desgasificación), y mientras se libera, interfiere físicamente con el contacto parejo entre agua y café.',
+      variables: ['Días desde el tueste', 'Nivel de tueste (más oscuro = más CO2)', 'Molienda (más superficie expuesta = degasifica más rápido)'],
+      evidencia: 'Café molido pierde su CO2 mucho más rápido que en grano entero, por eso moler justo antes de preparar (no horas antes) es una de las variables con mayor impacto medido en la consistencia de la extracción.',
+      aplicacion: 'Café muy fresco (1-4 días) puede necesitar más tiempo de bloom en filtrados o dar espressos con crema excesiva pero canalización; dejarlo reposar 5-10 días después del tueste suele dar extracciones más parejas.'
+    }
+  ];
+  document.getElementById('cienciaList').innerHTML = ciencia.map(c=>`
+    <div class="card article-card">
+      <p class="a-title">${c.concepto}</p>
+      <p class="a-desc">${c.explicacion}</p>
+      <div class="sci-section">
+        <p class="sci-label">Variables involucradas</p>
+        <div class="sci-vars">${c.variables.map(v=>`<span class="sci-var-chip">${v}</span>`).join('')}</div>
+      </div>
+      <div class="sci-section">
+        <p class="sci-label">Evidencia científica</p>
+        <p class="sci-text">${c.evidencia}</p>
+      </div>
+      <div class="sci-section">
+        <p class="sci-label">Aplicación práctica</p>
+        <p class="sci-text">${c.aplicacion}</p>
+      </div>
+    </div>`).join('');
+
+  // ---------- AROMAS Y SABORES (rueda sensorial) ----------
+  const aromaWheelData = [
+    { id:'frutal', name:'Frutal', color:'#E4574B', notes:[
+      { name:'Baya', desc:'Nota asociada a ésteres frutales (por ejemplo acetato de etilo) generados durante la fermentación del mucílago. Muy presente en procesos naturales y honey de altura, típica en cafés de Etiopía y Kenia.' },
+      { name:'Fruta desecada', desc:'Recuerda a pasas o ciruelas secas. Aparece en cafés con fermentación prolongada o secado lento, donde los azúcares se concentran antes del tueste.' },
+      { name:'Cítrico', desc:'Ligada a los ácidos cítrico y málico presentes de forma natural en el grano. Se conserva mejor con tuestes claros y un secado controlado que preserve la acidez.' },
+      { name:'Manzana / Uva', desc:'Nota frutal suave asociada a azúcares y ácidos orgánicos simples; frecuente en procesos lavados de altura media con tueste claro a medio.' }
+    ]},
+    { id:'floral', name:'Floral', color:'#D98CD0', notes:[
+      { name:'Jazmín / Rosa', desc:'Proviene de compuestos volátiles como el linalol, de la familia de los terpenos. Se libera mejor en tuestes claros y es característica de variedades como Geisha en proceso lavado.' },
+      { name:'Manzanilla', desc:'Nota floral suave y herbal, asociada a aceites esenciales similares a los de infusiones de manzanilla; se percibe sobre todo en el aroma en seco (fragancia).' },
+      { name:'Té negro', desc:'Nota sutil ligada a taninos y compuestos fenólicos leves. Común en tuestes medios de orígenes del este de África.' }
+    ]},
+    { id:'dulce', name:'Dulce', color:'#E0B15C', notes:[
+      { name:'Vainilla', desc:'Se relaciona con la vainillina, un compuesto que se forma durante la reacción de Maillard en el tueste. Más notable en tuestes medios bien desarrollados.' },
+      { name:'Caramelo / Melaza', desc:'Producto directo de la caramelización de azúcares durante el tueste. Aumenta con tuestes medios a medio-oscuros y con procesos honey, que dejan más azúcar en el mucílago.' },
+      { name:'Azúcar morena', desc:'Dulzor profundo asociado a un buen desarrollo post-crack; suele acompañar cuerpos altos en cafés de Brasil y Centroamérica.' }
+    ]},
+    { id:'nuez_cacao', name:'Nuez / Cacao', color:'#A9744F', notes:[
+      { name:'Nuez / Almendra', desc:'Ligada a pirazinas formadas en la reacción de Maillard durante el tueste. Muy común en cafés de Brasil y Centroamérica con tueste medio.' },
+      { name:'Cacao / Chocolate', desc:'Asociada a compuestos fenólicos y a la degradación de azúcares en tuestes medio-oscuros; se intensifica cuanto mayor es el desarrollo posterior al segundo crack.' }
+    ]},
+    { id:'especias', name:'Especias', color:'#C77B3B', notes:[
+      { name:'Pimienta negra', desc:'Nota picante vinculada a compuestos volátiles similares a los de especias secas; se vuelve más notoria en tuestes oscuros con mayor tiempo de desarrollo.' },
+      { name:'Canela / Clavo de olor', desc:'Aparece por transformaciones de azúcares y aminoácidos en tuestes con perfiles más lentos y de mayor temperatura final.' }
+    ]},
+    { id:'tostado', name:'Tostado', color:'#6E4A3A', notes:[
+      { name:'Cereal / Malta', desc:'Indica una reacción de Maillard poco desarrollada, típica de tuestes muy claros. Si domina el perfil, suele señalar un tueste insuficiente.' },
+      { name:'Ahumado', desc:'Se genera cuando los aceites del grano llegan a la superficie y se degradan por el calor prolongado, algo propio de tuestes oscuros.' },
+      { name:'Tabaco', desc:'Nota seca asociada a tuestes oscuros y también a granos verdes con tiempo de añejamiento (aging) prolongado antes de tostarse.' }
+    ]},
+    { id:'vegetal', name:'Verde / Vegetal', color:'#5B8C5A', notes:[
+      { name:'Vegetal fresco / Hoja', desc:'Señala compuestos como el hexanal, propios de un grano subdesarrollado en el tueste o de un secado defectuoso después de la cosecha.' },
+      { name:'Legumbre cruda', desc:'Asociada a un tueste muy claro o a un secado insuficiente del café en pergamino; recuerda a vegetales o legumbres sin cocinar.' },
+      { name:'Terroso / Musgo', desc:'Frecuente en procesos naturales con secado mal controlado o exceso de humedad; si es muy intensa puede señalar contaminación por moho.' }
+    ]},
+    { id:'fermentado', name:'Agrio / Fermentado', color:'#8FA23B', notes:[
+      { name:'Ácido acético / Vinagre', desc:'Producida por bacterias acéticas durante una fermentación prolongada o mal controlada del mucílago en el proceso húmedo.' },
+      { name:'Ácido butírico', desc:'Recuerda a manteca rancia. Señala una fermentación anaeróbica excesiva o defectuosa del grano.' },
+      { name:'Alcohólico / Vinoso', desc:'Común en procesos naturales u honey con fermentación extendida; en dosis altas se considera un defecto de proceso, en dosis bajas aporta complejidad.' }
+    ]},
+    { id:'otros', name:'Otros / Defectos', color:'#7A7A85', notes:[
+      { name:'Papel / Cartón', desc:'Asociada a café verde envejecido o mal almacenado, producto de la oxidación de lípidos del grano con el paso del tiempo.' },
+      { name:'Químico / Medicinal', desc:'Suele indicar un defecto de secado o algún tipo de contaminación durante el procesamiento húmedo del café.' },
+      { name:'Rancio / Aceite viejo', desc:'Causada por la oxidación de los aceites del café después del tueste; aumenta con el tiempo de reposo y una mala conservación del grano molido.' }
+    ]}
+  ];
+  let aromaActiveCat = null;
+
+  function polarPoint(cx, cy, r, angleDeg){
+    const rad = (angleDeg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+  function donutSlicePath(cx, cy, rOuter, rInner, startAngle, endAngle){
+    const p1 = polarPoint(cx, cy, rOuter, endAngle);
+    const p2 = polarPoint(cx, cy, rOuter, startAngle);
+    const p3 = polarPoint(cx, cy, rInner, startAngle);
+    const p4 = polarPoint(cx, cy, rInner, endAngle);
+    const largeArc = (endAngle - startAngle) <= 180 ? 0 : 1;
+    return `M ${p1.x} ${p1.y} A ${rOuter} ${rOuter} 0 ${largeArc} 0 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${rInner} ${rInner} 0 ${largeArc} 1 ${p4.x} ${p4.y} Z`;
+  }
+
+  function renderAromaWheel(){
+    const svg = document.getElementById('aromaWheel');
+    const cx = 150, cy = 150, rOuter = 138, rInner = 54;
+    const step = 360 / aromaWheelData.length;
+    let html = '';
+    aromaWheelData.forEach((cat, i)=>{
+      const start = i * step, end = start + step;
+      const mid = start + step/2;
+      const path = donutSlicePath(cx, cy, rOuter, rInner, start, end);
+      const labelPt = polarPoint(cx, cy, (rOuter+rInner)/2, mid);
+      const activeClass = cat.id === aromaActiveCat ? ' active' : '';
+      html += `<path class="aroma-slice${activeClass}" d="${path}" fill="${cat.color}" data-cat="${cat.id}"/>`;
+      html += `<text class="aroma-label" x="${labelPt.x}" y="${labelPt.y}" transform="rotate(0 ${labelPt.x} ${labelPt.y})">${cat.name}</text>`;
+    });
+    html += `<circle cx="${cx}" cy="${cy}" r="${rInner-4}" fill="var(--panel)"/>`;
+    html += `<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--purple-2)" font-family="Space Grotesk">RUEDA</text>`;
+    html += `<text x="${cx}" y="${cy+12}" text-anchor="middle" font-size="9" fill="var(--text-dim)" font-family="IBM Plex Mono">DE AROMAS</text>`;
+    svg.innerHTML = html;
+    svg.querySelectorAll('.aroma-slice').forEach(el=>{
+      el.addEventListener('click', ()=> selectAromaCategory(el.dataset.cat));
+    });
+  }
+
+  function selectAromaCategory(catId){
+    aromaActiveCat = catId;
+    renderAromaWheel();
+    const cat = aromaWheelData.find(c=>c.id===catId);
+    document.getElementById('aromaEmptyNote').style.display = 'none';
+    document.getElementById('aromaDetailCard').style.display = 'none';
+    const notesCard = document.getElementById('aromaNotesCard');
+    notesCard.style.display = 'block';
+    document.getElementById('aromaCatLabel').textContent = cat.name;
+    document.getElementById('aromaNotesList').innerHTML = cat.notes.map((n,idx)=>
+      `<span class="aroma-chip" data-idx="${idx}">${n.name}</span>`
+    ).join('');
+    document.querySelectorAll('#aromaNotesList .aroma-chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        document.querySelectorAll('#aromaNotesList .aroma-chip').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        const note = cat.notes[parseInt(chip.dataset.idx)];
+        document.getElementById('aromaDetailCard').style.display = 'block';
+        document.getElementById('aromaDetailLabel').textContent = cat.name;
+        document.getElementById('aromaDetailTitle').textContent = note.name;
+        document.getElementById('aromaDetailDesc').textContent = note.desc;
+      });
+    });
+  }
+  renderAromaWheel();
+
+  // ---------- PAPERS CIENTÍFICOS ----------
+  const papersData = [
+    { src:'Specialty Coffee Association', title:'SCA Research', desc:'Portal de investigación de la SCA: estudios sensoriales, sostenibilidad y ciencia de la extracción.', url:'https://sca.coffee/research' },
+    { src:'Specialty Coffee Association', title:'Brewing Fundamentals Research', desc:'Investigación conjunta con UC Davis que revisa los fundamentos científicos de la extracción de café.', url:'https://sca.coffee/brewing-research' },
+    { src:'Coffee Science Foundation', title:'Brewing Fundamentals', desc:'Brazo de investigación de la SCA, en conjunto con UC Davis Coffee Center, sobre las bases de la extracción.', url:'https://coffeescience.foundation/brewing-fundamentals' },
+    { src:'Specialty Coffee Association', title:'SCA Standards', desc:'Estándares técnicos oficiales de calidad, catación y procesos usados en la industria.', url:'https://sca.coffee/research/coffee-standards' },
+    { src:'World Coffee Research', title:'World Coffee Research', desc:'Organización sin fines de lucro dedicada a genética, agronomía y resiliencia climática del café.', url:'https://worldcoffeeresearch.org' },
+    { src:'PMC · NCBI', title:'Spectroscopy-Based Methods and Chemometrics', desc:'Comparación de métodos espectroscópicos para confirmar la clasificación de cafés especiales.', url:'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9180846/' },
+    { src:'PMC · NCBI', title:'Terpene Synthase & Coffee Aroma', desc:'Análisis sensorial, volatiloma y transcriptoma sobre el aroma característico de Coffea arabica.', url:'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10988958/' },
+    { src:'ScienceDirect', title:'Coffee Fermentation Process: A Review', desc:'Revisión de los procesos de fermentación del café y su impacto en la calidad final de la taza.', url:'https://www.sciencedirect.com/science/article/abs/pii/S0963996923003381' }
+  ];
+  function renderPapers(){
+    const list = document.querySelector('.paper-list');
+    if(!list) return;
+    list.innerHTML = papersData.map(p=>`
+      <a class="paper-card" href="${p.url}" target="_blank" rel="noopener noreferrer">
+        <span class="go"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+        <p class="src">${p.src}</p>
+        <p class="pt">${p.title}</p>
+        <p class="pd">${p.desc}</p>
+      </a>`).join('');
+  }
+  renderPapers();
+
+  // ---------- CAFES ----------
+  const cafes = [
+    {t:'Etiopía', d:'Notas florales y cítricas en procesos lavados; frutos rojos y vino en naturales. Ideal para resaltar acidez en filtrados.'},
+    {t:'Colombia', d:'Perfil equilibrado, caramelo y manzana. Buen punto de partida para calibrar molienda en espresso.'},
+    {t:'Brasil', d:'Cuerpo alto, notas a nuez y chocolate, acidez baja. Clásico para blends de espresso.'},
+    {t:'Guatemala', d:'Cuerpo medio, notas a chocolate y frutas maduras, acidez brillante en altura.'}
+  ];
+  document.getElementById('cafesList').innerHTML = cafes.map(c=>`
+    <div class="card article-card">
+      <p class="a-title">${c.t}</p>
+      <p class="a-desc">${c.d}</p>
+    </div>`).join('');
+
+  const fincasPrestigiosas = [
+    {
+      nombre: 'Hacienda La Esmeralda',
+      pais: 'Panamá · Boquete',
+      dato: 'Récord histórico: 98.00 puntos (Geisha lavado) y 97.00 puntos (Geisha natural) en Best of Panama 2025 — las puntuaciones más altas en los 29 años del concurso.',
+      url: 'https://haciendaesmeralda.com/farms-details/'
+    },
+    {
+      nombre: 'Finca El Injerto',
+      pais: 'Guatemala · Huehuetenango',
+      dato: 'El productor más condecorado de Guatemala: 8 primeros puestos históricos en el Cup of Excellence, un récord a nivel mundial. En manos de la familia Aguirre desde 1874.',
+      url: 'https://fincaelinjerto.com/'
+    },
+    {
+      nombre: 'La Palma y El Tucán',
+      pais: 'Colombia · Cundinamarca',
+      dato: 'Pionera del procesamiento láctico (fermentación anaeróbica controlada) y de un modelo de comercio directo con más de 200 productores vecinos en un radio de 10 km.',
+      url: 'https://lapalmayeltucan.com/our-story'
+    }
+  ];
+  document.getElementById('fincasPrestigiosasList').innerHTML = fincasPrestigiosas.map(f=>`
+    <a class="paper-card" href="${f.url}" target="_blank" rel="noopener noreferrer">
+      <span class="go"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+      <p class="src">${f.pais}</p>
+      <p class="pt">${f.nombre}</p>
+      <p class="pd">${f.dato}</p>
+    </a>`).join('');
+
+  async function renderFichasCafe(){
+    const list = document.getElementById('fichasCafeList');
+    let coffees = [];
+    try{ coffees = await apiFetch('/coffees'); }
+    catch(e){ list.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
+    if(coffees.length === 0){
+      list.innerHTML = '<p class="empty-note">Todavía no hay fichas publicadas por la comunidad.</p>';
+      return;
+    }
+    list.innerHTML = coffees.map(c=>`
+      <div class="card article-card">
+        <p class="a-title">${esc(c.nombre)}</p>
+        <p class="card-sub" style="margin-bottom:6px;">${esc([c.pais, c.region, c.variedad, c.proceso].filter(Boolean).join(' · ')) || 'Sin datos de origen'}</p>
+        ${c.notasSensoriales ? `<p class="a-desc">${esc(c.notasSensoriales)}</p>` : ''}
+        <p class="card-sub" style="margin-top:6px;">agregado por ${esc(c.addedBy ? c.addedBy.username : '—')}</p>
+      </div>`).join('');
+  }
+
+  document.getElementById('ncSubmitBtn').addEventListener('click', async ()=>{
+    if(!sessionUser){ toast('Iniciá sesión para publicar una ficha.'); return; }
+    const errEl = document.getElementById('ncError');
+    errEl.textContent = '';
+    const nombre = document.getElementById('ncNombre').value.trim();
+    if(!nombre){ errEl.textContent = 'Ponele un nombre a la ficha.'; return; }
+    try{
+      await apiFetch('/coffees', { method:'POST', body: JSON.stringify({
+        nombre,
+        pais: document.getElementById('ncPais').value.trim() || undefined,
+        region: document.getElementById('ncRegion').value.trim() || undefined,
+        origen: document.getElementById('ncOrigen').value.trim() || undefined,
+        productor: document.getElementById('ncProductor').value.trim() || undefined,
+        variedad: document.getElementById('ncVariedad').value.trim() || undefined,
+        proceso: document.getElementById('ncProceso').value.trim() || undefined,
+        altitudMsnm: parseInt(document.getElementById('ncAltitud').value) || undefined,
+        tueste: document.getElementById('ncTueste').value.trim() || undefined,
+        notasSensoriales: document.getElementById('ncNotas').value.trim() || undefined,
+      })});
+      ['ncNombre','ncPais','ncRegion','ncOrigen','ncProductor','ncVariedad','ncProceso','ncAltitud','ncTueste','ncNotas'].forEach(id=>{
+        document.getElementById(id).value = '';
+      });
+      toast('Ficha publicada');
+      showView('cafes');
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  // ---------- TECNICAS ----------
+  const tecnicas = [
+    {
+      t:'Nivelado y distribución del lecho',
+      d:'El agua sigue el camino de menor resistencia. Si el lecho de café tiene zonas más compactas que otras, el flujo se concentra en los puntos flojos ("channeling") y esa parte del café queda sobreextraída mientras el resto queda subextraído — la taza mezcla ambos defectos a la vez. En espresso esto se ve directamente en shots con chorros irregulares o que salen disparados hacia un costado. La distribución (WDT — Weiss Distribution Technique, remover el café con agujas finas antes de tampear) rompe los grumos que forma la molienda por fricción estática, y es la variable con mayor impacto medido en la uniformidad de extracción según pruebas de la comunidad de barismo con refractómetro.'
+    },
+    {
+      t:'Desgasificación (blooming) en filtrados',
+      d:'El café recién tostado retiene CO2 atrapado en la estructura porosa del grano — hasta un 2% de su peso en los primeros días. Al mojarse, ese gas escapa y empuja agua hacia afuera de la cama de café, dificultando el contacto parejo agua-café durante los primeros 30-45 segundos. Verter agua caliente equivalente a 2-3 veces el peso del café en seco y esperar antes de continuar deja que la mayor parte del CO2 escape, permitiendo que la extracción real avance de forma más pareja durante el resto del vertido. Café muy fresco (menos de 4-5 días de tostado) desgasifica más y puede necesitar un bloom más largo.'
+    },
+    {
+      t:'Química del agua: dureza y alcalinidad',
+      d:'El agua no es un solvente neutro: los iones de magnesio y calcio (dureza) se unen a compuestos aromáticos y ayudan a extraerlos, mientras que el bicarbonato (alcalinidad) neutraliza los ácidos del café, reduciendo la percepción de acidez y pudiendo dejar la taza plana si es muy alta. La SCA recomienda un rango de 75-250 ppm de sólidos disueltos totales, con una dureza cercana a 50-175 mg/L de carbonato de calcio. Agua destilada o de ósmosis inversa sin remineralizar extrae mal (sabor plano); agua muy dura o con alcalinidad alta amortigua la acidez y puede generar sabores minerales.'
+    },
+    {
+      t:'Ajustar una sola variable a la vez',
+      d:'Molienda, dosis, tiempo, temperatura y ratio interactúan entre sí — cambiar dos a la vez hace que el resultado en taza sea la suma de dos efectos que no podés separar, y termina reforzando ajustes por intuición en vez de por evidencia. El método de calibración estándar en control de calidad es el diseño experimental de un factor a la vez (OFAT): fijás todas las variables menos una, cambiás esa, catás, y recién ahí pasás a la siguiente. Es más lento pero es la única forma de saber con certeza qué corrigió (o empeoró) el sabor.'
+    },
+    {
+      t:'Relación entre TDS, EY y percepción de sabor',
+      d:'El TDS (sólidos disueltos totales) mide qué tan concentrada está la bebida; el EY (extraction yield) mide qué porcentaje de la masa del café en seco terminó disuelto en el agua. Son cosas distintas: un espresso ristretto puede tener TDS más alto pero EY más bajo que un lungo del mismo café. La zona "Golden Cup" de referencia de la industria (18-22% EY, aproximadamente 1.15-1.35% TDS en filtrados) no es un óptimo universal de sabor, sino el rango donde la mayoría de los panelistas de cata coinciden en percibir balance entre ácidos, azúcares y compuestos amargos — fuera de ese rango no es automáticamente "malo", pero es más probable que domine un solo atributo (ácido si está bajo, amargo/astringente si está alto).'
+    },
+    {
+      t:'Agitación en métodos de inmersión (prensa francesa, cupping)',
+      d:'En los métodos por goteo el agua se mueve sola a través del lecho; en los de inmersión (prensa francesa, AeroPress con pausa, cata/cupping) el café flota en el agua sin flujo forzado, así que la agitación mecánica (remover con cuchara) es la que reemplaza ese movimiento y determina qué tan rápido y parejo se disuelven los compuestos solubles. Poca agitación deja partículas de café flotando sin contacto pleno con el agua (subextracción localizada); demasiada agitación prolongada aumenta el EY más allá del punto de balance. El protocolo de cupping de la SCA estandariza esto con instrucciones exactas de cuántas veces remover y en qué momento, precisamente porque la agitación es una variable de extracción tan real como la temperatura.'
+    }
+  ];
+  document.getElementById('tecnicasList').innerHTML = tecnicas.map(t=>`
+    <div class="card article-card">
+      <p class="a-title">${t.t}</p>
+      <p class="a-desc">${t.d}</p>
+    </div>`).join('');
+
+  // ---------- COMUNIDAD (feed real) ----------
+  async function renderComunidad(){
+    const list = document.getElementById('comunidadList');
+    let posts = [];
+    try{ posts = await apiFetch('/community'); }
+    catch(e){ list.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
+
+    if(posts.length === 0){
+      list.innerHTML = '<p class="empty-note">Todavía nadie publicó una extracción. ¡Sé el primero!</p>';
+      return;
+    }
+    list.innerHTML = posts.map(p=>`
+      <div class="card post-card">
+        <div class="p-head">
+          <div class="avatar">${esc(p.user.username.slice(0,2).toUpperCase())}</div>
+          <div>
+            <p class="p-name">@${esc(p.user.username)}</p>
+            <p class="p-meta">${esc(p.extraction.metodo)} · ${esc(p.extraction.ratio)} ${p.extraction.categoria ? '· '+esc(p.extraction.categoria) : ''}</p>
+          </div>
+        </div>
+        <p class="p-text">${esc(p.descripcion || '')}</p>
+        <div class="p-actions"><span>💬 ${p.comments.length}</span></div>
+        ${p.comments.map(c=>`<p class="card-sub" style="margin-top:6px;">@${esc(c.user.username)}: ${esc(c.texto)}</p>`).join('')}
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <input type="text" class="comunidadCommentInput" data-post="${p.id}" placeholder="Comentar..." style="flex:1;">
+          <button class="icon-btn" data-comment-post="${p.id}">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 4l16 8-16 8V4z"/></svg></span>
+          </button>
+        </div>
+      </div>`).join('');
+
+    document.querySelectorAll('[data-comment-post]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!sessionUser){ toast('Iniciá sesión para comentar.'); return; }
+        const postId = btn.dataset.commentPost;
+        const input = document.querySelector(`.comunidadCommentInput[data-post="${postId}"]`);
+        const texto = input.value.trim();
+        if(!texto) return;
+        try{
+          await apiFetch(`/community/${postId}/comentarios`, { method:'POST', body: JSON.stringify({ texto }) });
+          await renderComunidad();
+        }catch(e){ toast('No se pudo comentar: ' + e.message); }
+      });
+    });
+  }
+
+  document.getElementById('publicarExtraccionBtn').addEventListener('click', async ()=>{
+    if(!sessionUser){ toast('Iniciá sesión para publicar.'); return; }
+    if(!extracciones.length){ toast('Registrá una extracción primero.'); return; }
+    const descripcion = prompt('Contá algo sobre esta extracción (opcional):', '') || '';
+    try{
+      await apiFetch('/community', { method:'POST', body: JSON.stringify({ extractionId: extracciones[0].id, descripcion }) });
+      toast('Extracción publicada en la comunidad');
+      await renderComunidad();
+    }catch(e){ toast('No se pudo publicar: ' + e.message); }
+  });
+
+  // ---------- AUTENTICACIÓN (backend real) ----------
+  // El registro y el login ahora se validan del lado del servidor: las
+  // contraseñas se hashean con bcrypt en el backend y nunca viajan ni se
+  // guardan en texto plano. Acá solo se guarda el token (JWT) que devuelve
+  // la API, y los datos básicos del usuario logueado.
+  let sessionUser = null; // { id, username, role }
+
+  function getSession(){
+    try{ return JSON.parse(window.localStorage.getItem('1312coffeelab_session') || 'null'); }
+    catch(e){ return null; }
+  }
+  function setSession(user){ window.localStorage.setItem('1312coffeelab_session', JSON.stringify(user)); }
+  function clearSession(){ window.localStorage.removeItem('1312coffeelab_session'); clearToken(); }
+
+  function showAuthPanel(which){
+    document.getElementById('authLoginPanel').style.display = which==='login' ? 'block' : 'none';
+    document.getElementById('authSignupPanel').style.display = which==='signup' ? 'block' : 'none';
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('signupError').textContent = '';
+  }
+  document.getElementById('goToSignup').addEventListener('click', ()=> showAuthPanel('signup'));
+  document.getElementById('goToLogin').addEventListener('click', ()=> showAuthPanel('login'));
+
+  async function currentUser(){ return sessionUser; }
+
+  async function openApp(){
+    document.getElementById('authGate').classList.add('hide');
+    await refreshAccountUI();
+    await loadExtracciones();
+    renderToday();
+  }
+
+  async function refreshAccountUI(){
+    const user = sessionUser;
+    if(!user) return;
+    const initials = user.username.slice(0,2).toUpperCase();
+    document.getElementById('perfilAvatar').textContent = initials;
+    document.getElementById('perfilNombre').textContent = user.username;
+    const roleLabels = { usuario:'Usuario registrado', barista:'Barista', administrador:'Administrador' };
+    document.getElementById('perfilRol').textContent = roleLabels[user.role] || user.role;
+    document.getElementById('adminEntryCard').style.display = user.role === 'administrador' ? 'block' : 'none';
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const username = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    if(!username || !pass){ errEl.textContent = 'Completá usuario y contraseña.'; return; }
+    try{
+      const data = await apiFetch('/auth/login', { method:'POST', body: JSON.stringify({ username, password: pass }) });
+      setToken(data.token);
+      sessionUser = data.user;
+      setSession(data.user);
+      await openApp();
+      toast(`Hola de nuevo, ${data.user.username}`);
+    }catch(e){
+      errEl.textContent = e.message.includes('conexión')
+        ? 'No se pudo conectar con el servidor. ¿Está corriendo el backend (npm run dev)?'
+        : e.message;
+    }
+  });
+
+  document.getElementById('signupBtn').addEventListener('click', async ()=>{
+    const username = document.getElementById('signupUser').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const pass = document.getElementById('signupPass').value;
+    const pass2 = document.getElementById('signupPass2').value;
+    const errEl = document.getElementById('signupError');
+    if(!username || !pass){ errEl.textContent = 'Completá usuario y contraseña.'; return; }
+    if(pass !== pass2){ errEl.textContent = 'Las contraseñas no coinciden.'; return; }
+    try{
+      const data = await apiFetch('/auth/register', { method:'POST', body: JSON.stringify({ username, email: email || undefined, password: pass }) });
+      setToken(data.token);
+      sessionUser = data.user;
+      setSession(data.user);
+      await openApp();
+      toast(`Cuenta creada. ¡Bienvenido, ${username}!`);
+    }catch(e){
+      errEl.textContent = e.message.includes('conexión')
+        ? 'No se pudo conectar con el servidor. ¿Está corriendo el backend (npm run dev)?'
+        : e.message;
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+    clearSession();
+    sessionUser = null;
+    document.getElementById('authGate').classList.remove('hide');
+    showAuthPanel('login');
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    showView('inicio');
+  });
+
+  // ---------- ADMIN ----------
+  async function renderAdmin(){
+    const user = await currentUser();
+    if(!user || user.role !== 'administrador'){ showView('perfil'); return; }
+    let users = [];
+    let misExtracciones = [];
+    try{
+      users = await apiFetch('/users');
+      misExtracciones = await apiFetch('/extractions');
+    }catch(e){
+      toast('No se pudo cargar el panel de administrador: ' + e.message);
+      return;
+    }
+    const admins = users.filter(u=>u.role==='administrador').length;
+    document.getElementById('adminStats').innerHTML = `
+      <div class="stat"><div class="k">Usuarios</div><div class="v">${users.length}</div></div>
+      <div class="stat"><div class="k">Admins</div><div class="v">${admins}</div></div>
+      <div class="stat"><div class="k">Extracciones (mías)</div><div class="v">${misExtracciones.length}</div></div>`;
+
+    document.getElementById('adminUserList').innerHTML = users.map(u=>`
+      <div class="card" style="margin-bottom:0; padding:14px; display:flex; align-items:center; gap:10px;">
+        <div class="avatar" style="width:38px; height:38px; font-size:12px;">${esc(u.username.slice(0,2).toUpperCase())}</div>
+        <div style="flex:1;">
+          <p class="card-title" style="font-size:13.5px;">${esc(u.username)} ${u.role==='administrador' ? '· <span style=\"color:var(--holo-2);\">admin</span>' : u.role==='barista' ? '· barista' : ''}</p>
+          <p class="card-sub">${esc(u.email || 'sin email')} · desde ${new Date(u.createdAt).toLocaleDateString('es-AR')}</p>
+        </div>
+        <button class="icon-btn" data-role-toggle="${u.id}" data-current-role="${u.role}" title="Cambiar rol">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-4z"/></svg></span>
+        </button>
+        <button class="icon-btn" data-user-delete="${u.id}" data-username="${esc(u.username)}" title="Eliminar usuario">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+        </button>
+      </div>`).join('');
+
+    document.querySelectorAll('[data-role-toggle]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.roleToggle;
+        const current = btn.dataset.currentRole;
+        const next = current === 'administrador' ? 'usuario' : current === 'usuario' ? 'barista' : 'administrador';
+        try{
+          await apiFetch(`/users/${id}/rol`, { method:'PUT', body: JSON.stringify({ role: next }) });
+          renderAdmin();
+          toast(`Rol actualizado a ${next}`);
+        }catch(e){ toast(e.message); }
+      });
+    });
+    document.querySelectorAll('[data-user-delete]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.userDelete;
+        const uname = btn.dataset.username;
+        if(!confirm(`¿Eliminar al usuario ${uname}? Esta acción no se puede deshacer.`)) return;
+        try{
+          await apiFetch(`/users/${id}`, { method:'DELETE' });
+          renderAdmin();
+          toast(`Usuario ${uname} eliminado`);
+        }catch(e){ toast(e.message); }
+      });
+    });
+  }
+
+  document.getElementById('perfilChangePassBtn').addEventListener('click', async ()=>{
+    const currentPassword = document.getElementById('perfilCurrentPass').value;
+    const newPassword = document.getElementById('perfilNewPass').value;
+    const errEl = document.getElementById('perfilPassError');
+    errEl.textContent = '';
+    if(!currentPassword || !newPassword){ errEl.textContent = 'Completá los dos campos.'; return; }
+    try{
+      await apiFetch('/auth/password', { method:'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
+      document.getElementById('perfilCurrentPass').value = '';
+      document.getElementById('perfilNewPass').value = '';
+      toast('Contraseña actualizada.');
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  document.getElementById('adminResetDataBtn').addEventListener('click', async ()=>{
+    toast('Este botón borraba datos locales del demo offline. Con el backend conectado, tus extracciones y recetas ya viven en la base de datos real y no se borran desde acá.');
+  });
+
+  // ---------- PERFIL ----------
+  function renderPerfil(){
+    // Las estadísticas del perfil ahora se piden a la API, con manejo de
+    // que el fetch pueda fallar si el backend no está corriendo.
+    apiFetch('/extractions').then(mias=>{
+      const stats = document.getElementById('perfilStats');
+      const total = mias.length;
+      const espressos = mias.filter(e=>e.metodo==='Espresso').length;
+      stats.innerHTML = `
+        <div class="stat"><div class="k">Extracciones</div><div class="v">${total}</div></div>
+        <div class="stat"><div class="k">Espressos</div><div class="v">${espressos}</div></div>`;
+    }).catch(()=>{
+      document.getElementById('perfilStats').innerHTML = `<p class="card-sub">No se pudo conectar con el servidor.</p>`;
+    });
+  }
+
+  // ---------- Init ----------
+  (async function init(){
+    await loadRecetas();
+    renderRecetas();
+
+    const session = getSession();
+    const token = getToken();
+    if(session && token){
+      sessionUser = session;
+      await openApp();
+    }
+  })();
+
+})();
+</script>
+</body>
+</html>

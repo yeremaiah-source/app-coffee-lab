@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  usuario
+  barista
+  administrador
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String?  @unique
+  passwordHash String
+  role         Role     @default(usuario)
+  createdAt    DateTime @default(now())
+
+  extractions    Extraction[]
+  recipes        Recipe[]
+  coffees        Coffee[]
+  communityPosts CommunityPost[]
+  comments       Comment[]
+}
+
+model Extraction {
+  id                  String   @id @default(uuid())
+  user                User     @relation(fields: [userId], references: [id])
+  userId              String
+  metodo              String
+  cafe                String?
+  molienda            String?
+  dosisG              Float
+  aguaG               Float
+  ratio               String
+  tiempoSeg           Int?
+  temperaturaC        Float?
+  tds                 Float?
+  tdsEstimado         Boolean  @default(false)
+  tdsRangoMin         Float?
+  tdsRangoMax         Float?
+  tdsConfianza        Float?
+  tdsConfianzaLabel   String?
+  ey                  Float?
+  categoria           String?
+  recomendacion       String?
+  notas               String?
+  createdAt           DateTime @default(now())
+
+  communityPost CommunityPost?
+}
+
+// Calibración estadística del motor de estimación de TDS: guarda, por
+// método de preparación, el sesgo promedio observado entre lo que el
+// modelo heurístico predice y lo que un refractómetro real midió. Se
+// actualiza de forma incremental cada vez que alguien carga un TDS
+// medido — así el motor se ajusta solo con datos reales de uso, sin
+// reentrenar nada manualmente.
+model TdsCalibration {
+  metodo          String   @id
+  muestras        Int      @default(0)
+  sesgoPromedio   Float    @default(0)
+  actualizadoEn   DateTime @updatedAt
+}
+
+model Recipe {
+  id               String   @id @default(uuid())
+  author           User     @relation(fields: [authorId], references: [id])
+  authorId         String
+  nombre           String
+  metodo           String
+  cafe             String?
+  molienda         String?
+  dosisG           Float?
+  aguaG            Float?
+  temperaturaC     Float?
+  ratio            String?
+  tiempoSeg        Int?
+  pasos            String?
+  notas            String?
+  version          Int      @default(1)
+  resultados       String?
+  parentRecipeId   String?
+  parentRecipe     Recipe?  @relation("RecipeVersions", fields: [parentRecipeId], references: [id])
+  versiones        Recipe[] @relation("RecipeVersions")
+  createdAt        DateTime @default(now())
+}
+
+model Coffee {
+  id             String   @id @default(uuid())
+  addedBy        User     @relation(fields: [addedById], references: [id])
+  addedById      String
+  nombre         String
+  origen         String?
+  pais           String?
+  region         String?
+  productor      String?
+  variedad       String?
+  proceso        String?
+  altitudMsnm    Int?
+  tueste         String?
+  fechaTueste    DateTime?
+  notasSensoriales String?
+  createdAt      DateTime @default(now())
+}
+
+model CommunityPost {
+  id           String     @id @default(uuid())
+  extraction   Extraction @relation(fields: [extractionId], references: [id])
+  extractionId String     @unique
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  descripcion  String?
+  createdAt    DateTime   @default(now())
+
+  comments Comment[]
+}
+
+model Comment {
+  id        String        @id @default(uuid())
+  post      CommunityPost @relation(fields: [postId], references: [id])
+  postId    String
+  user      User          @relation(fields: [userId], references: [id])
+  userId    String
+  texto     String
+  createdAt DateTime      @default(now())
+}

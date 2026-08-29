@@ -62,4 +62,23 @@ async function eliminarComentario(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listarFeed, publicar, comentar, eliminarComentario };
+async function eliminarPost(req, res, next) {
+  try {
+    const post = await prisma.communityPost.findUnique({ where: { id: req.params.id } });
+    if (!post) return res.status(404).json({ error: 'Publicación no encontrada.' });
+    const esAutor = post.userId === req.user.sub;
+    const esAdmin = req.user.role === 'administrador';
+    if (!esAutor && !esAdmin) {
+      return res.status(403).json({ error: 'No tenés permiso para borrar esta publicación.' });
+    }
+    // Se borran primero los comentarios (la FK no tiene cascada) y recién
+    // después la publicación, todo en una sola transacción.
+    await prisma.$transaction([
+      prisma.comment.deleteMany({ where: { postId: req.params.id } }),
+      prisma.communityPost.delete({ where: { id: req.params.id } }),
+    ]);
+    res.status(204).send();
+  } catch (e) { next(e); }
+}
+
+module.exports = { listarFeed, publicar, comentar, eliminarComentario, eliminarPost };

@@ -1793,14 +1793,17 @@
       list.innerHTML = '<p class="empty-note">Todavía nadie publicó una extracción. ¡Sé el primero!</p>';
       return;
     }
-    list.innerHTML = posts.map(p=>`
+    list.innerHTML = posts.map(p=>{
+      const puedeBorrarPost = sessionUser && (sessionUser.id === p.userId || sessionUser.role === 'administrador');
+      return `
       <div class="card post-card">
         <div class="p-head">
           ${p.user.avatarUrl ? `<div class="avatar" style="overflow:hidden;"><img src="${esc(p.user.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar">${esc(p.user.username.slice(0,2).toUpperCase())}</div>`}
-          <div>
+          <div style="flex:1;">
             <p class="p-name">@${esc(p.user.username)}</p>
             <p class="p-meta">${esc(p.extraction.metodo)} · ${esc(p.extraction.ratio)} ${p.extraction.categoria ? '· '+esc(p.extraction.categoria) : ''}</p>
           </div>
+          ${puedeBorrarPost ? `<span data-delete-post="${p.id}" style="cursor:pointer; color:var(--text-faint); font-size:16px;" title="Borrar publicación">✕</span>` : ''}
         </div>
         <p class="p-text">${esc(p.descripcion || '')}</p>
         ${p.fotoUrl ? `<img src="${esc(p.fotoUrl)}" alt="Foto del café" style="width:100%; border-radius:12px; margin-top:10px; display:block;">` : ''}
@@ -1820,7 +1823,8 @@
             <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 4l16 8-16 8V4z"/></svg></span>
           </button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     document.querySelectorAll('[data-comment-post]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
@@ -1842,6 +1846,16 @@
           await apiFetch(`/community/comentarios/${el.dataset.deleteComment}`, { method:'DELETE' });
           await renderComunidad();
           toast('Comentario borrado');
+        }catch(e){ toast('No se pudo borrar: ' + e.message); }
+      });
+    });
+    document.querySelectorAll('[data-delete-post]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        if(!confirm('¿Borrar esta publicación y todos sus comentarios?')) return;
+        try{
+          await apiFetch(`/community/${el.dataset.deletePost}`, { method:'DELETE' });
+          await renderComunidad();
+          toast('Publicación borrada');
         }catch(e){ toast('No se pudo borrar: ' + e.message); }
       });
     });

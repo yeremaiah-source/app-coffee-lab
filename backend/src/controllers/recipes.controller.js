@@ -1,4 +1,5 @@
 const prisma = require('../prismaClient');
+const { crearNotificacion } = require('./notifications.controller');
 
 async function listar(req, res, next) {
   try {
@@ -52,6 +53,13 @@ async function duplicar(req, res, next) {
       },
     });
     res.status(201).json(nueva);
+    if (original.authorId !== req.user.sub) {
+      await crearNotificacion({
+        userId: original.authorId,
+        tipo: 'receta_duplicada',
+        mensaje: `Alguien duplicó tu receta "${original.nombre}" para modificarla.`,
+      });
+    }
   } catch (e) { next(e); }
 }
 

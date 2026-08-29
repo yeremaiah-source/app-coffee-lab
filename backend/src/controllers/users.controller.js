@@ -3,10 +3,39 @@ const prisma = require('../prismaClient');
 async function listar(req, res, next) {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, username: true, email: true, role: true, createdAt: true },
+      select: { id: true, username: true, email: true, role: true, createdAt: true, avatarUrl: true },
       orderBy: { createdAt: 'asc' },
     });
     res.json(users);
+  } catch (e) { next(e); }
+}
+
+// Datos de tránsito para el panel de administrador: últimos accesos
+// (usuario, fecha, IP, dispositivo) y una cuenta aproximada de "usuarios
+// activos" — se considera activo a quien inició sesión en los últimos
+// 15 minutos, como aproximación razonable sin necesitar websockets.
+async function actividad(req, res, next) {
+  try {
+    const quinceMinAtras = new Date(Date.now() - 15 * 60 * 1000);
+    const [ultimosAccesos, activosAhora, totalAccesosHoy] = await Promise.all([
+      prisma.loginEvent.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+        include: { user: { select: { username: true } } },
+      }),
+      prisma.loginEvent.groupBy({
+        by: ['userId'],
+        where: { createdAt: { gte: quinceMinAtras } },
+      }),
+      prisma.loginEvent.count({
+        where: { createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } },
+      }),
+    ]);
+    res.json({
+      ultimosAccesos,
+      activosAhora: activosAhora.length,
+      totalAccesosHoy,
+    });
   } catch (e) { next(e); }
 }
 
@@ -38,4 +67,4 @@ async function eliminar(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, cambiarRol, eliminar };
+module.exports = { listar, cambiarRol, eliminar, actividad };

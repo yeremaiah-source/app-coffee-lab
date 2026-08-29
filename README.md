@@ -89,6 +89,40 @@ migra y qué se reconstruye.
   pueda falsear desde el cliente porque el backend también valida
   autoría en `PUT /api/recipes/:id`). El flujo completo "duplicar →
   editar → guardar como versión propia" ya funciona de punta a punta.
+- ✅ **"Olvidé mi contraseña"**: flujo completo por email —
+  `POST /api/auth/forgot-password` genera un token con 1 hora de vida y
+  envía un link (`tu-frontend/?reset=TOKEN`); la app detecta ese
+  parámetro solo al abrirse y muestra la pantalla para elegir una
+  contraseña nueva, que valida el token contra
+  `POST /api/auth/reset-password`. La respuesta es siempre genérica
+  ("si el usuario existe...") para no revelar qué usuarios están
+  registrados. **Mientras no configures `EMAIL_USER`/`EMAIL_PASS` en las
+  variables de entorno, el link se imprime en los logs del servidor en
+  vez de enviarse** — anotado como paso obligatorio antes de compartir
+  el link públicamente (ver `.env.example`, incluye instrucciones para
+  usar Gmail con una contraseña de aplicación).
+- ✅ **Foto de perfil y fotos en publicaciones**: subida real de imágenes
+  vía Cloudinary (plan gratuito) — tocás tu avatar en Perfil para
+  cambiarlo, y podés adjuntar una foto de tu café al publicar una
+  extracción en la comunidad. Validado por tipo de archivo real (no por
+  extensión) y limitado a 5MB. **Requiere crear una cuenta gratuita en
+  Cloudinary y completar `CLOUDINARY_CLOUD_NAME` /
+  `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`** — mientras esas
+  variables no estén, la subida de imágenes devuelve un error claro en
+  vez de romperse (ver `.env.example`).
+- ✅ **Registro con email obligatorio**: ya no se puede crear una cuenta
+  sin email — es la única forma de entrar a la app, y sirve además para
+  la recuperación de contraseña.
+- ✅ **Notificaciones reales**: la campana ahora funciona — se genera
+  una notificación cuando alguien comenta tu publicación o duplica una
+  receta tuya, con contador de no leídas y un panel para verlas y
+  marcarlas como leídas.
+- ✅ **Panel de administrador: tránsito de accesos**: cada login queda
+  registrado (usuario, IP, dispositivo, fecha) en la tabla
+  `LoginEvent`. El panel de admin muestra usuarios "activos ahora"
+  (con login en los últimos 15 minutos), accesos totales del día, y el
+  detalle de los últimos 30 accesos.
+- ✅ Logo del topbar agrandado.
 - ✅ **Biblioteca científica reestructurada**: la sección "Ciencia" dejó
   de ser una lista de tarjetas sueltas y ahora sigue el formato
   Concepto → Explicación → Variables → Evidencia científica →

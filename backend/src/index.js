@@ -23,6 +23,8 @@ const coffeesRoutes = require('./routes/coffees.routes');
 const communityRoutes = require('./routes/community.routes');
 const usersRoutes = require('./routes/users.routes');
 const tdsRoutes = require('./routes/tds.routes');
+const uploadsRoutes = require('./routes/uploads.routes');
+const notificationsRoutes = require('./routes/notifications.routes');
 
 const app = express();
 
@@ -66,6 +68,8 @@ const limiterAuth = rateLimit({
 });
 app.use('/api/auth/login', limiterAuth);
 app.use('/api/auth/register', limiterAuth);
+app.use('/api/auth/forgot-password', limiterAuth);
+app.use('/api/auth/reset-password', limiterAuth);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, version: '0.1' }));
 
@@ -76,11 +80,16 @@ app.use('/api/coffees', coffeesRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/tds', tdsRoutes);
+app.use('/api/uploads', uploadsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Manejador de errores: nunca se devuelve el stack trace al cliente,
 // solo un mensaje. El detalle completo queda en los logs del servidor.
 app.use((err, req, res, next) => {
   console.error(err);
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'La imagen es demasiado grande (máximo 5MB).' });
+  }
   const status = err.status || (err.message === 'Origen no permitido por CORS' ? 403 : 500);
   res.status(status).json({ error: err.message || 'Error interno' });
 });

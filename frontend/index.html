@@ -98,7 +98,7 @@
   .logo .num{
     font-family:'Bungee', sans-serif;
     font-weight:400;
-    font-size:22px;
+    font-size:32px;
     letter-spacing:.02em;
     background:linear-gradient(115deg, var(--metal-2) 0%, var(--metal-3) 22%, var(--metal-1) 40%, var(--metal-deep) 55%, var(--metal-3) 72%, var(--metal-2) 100%);
     background-size:220% 100%;
@@ -113,7 +113,7 @@
   }
   .logo .sub{
     font-family:'IBM Plex Mono', monospace;
-    font-size:8px;
+    font-size:9.5px;
     letter-spacing:.32em;
     color:var(--text-faint);
     margin-top:3px;
@@ -398,14 +398,15 @@
       <p class="auth-error" id="loginError"></p>
       <button class="primary-btn" id="loginBtn" style="margin-top:14px;">Entrar</button>
       <p class="auth-switch">¿No tenés cuenta? <a id="goToSignup">Creá una</a></p>
+      <p class="auth-switch">¿Olvidaste tu contraseña? <a id="goToForgot">Recuperarla</a></p>
     </div>
 
     <div id="authSignupPanel" style="display:none;">
       <p class="eyebrow" style="text-align:center;">Crear cuenta</p>
       <label>Usuario</label>
       <input type="text" id="signupUser" placeholder="elegí un usuario">
-      <label style="margin-top:10px;">Email (opcional)</label>
-      <input type="email" id="signupEmail" placeholder="tu@email.com">
+      <label style="margin-top:10px;">Email (obligatorio)</label>
+      <input type="email" id="signupEmail" placeholder="tu@email.com" required>
       <label style="margin-top:10px;">Contraseña</label>
       <input type="password" id="signupPass" placeholder="mínimo 8 caracteres">
       <label style="margin-top:10px;">Repetir contraseña</label>
@@ -415,7 +416,27 @@
       <p class="auth-switch">¿Ya tenés cuenta? <a id="goToLogin">Iniciá sesión</a></p>
     </div>
 
-    <p class="auth-hint">¿Primera vez en este dispositivo? Iniciá sesión con el usuario <b>admin</b> para entrar como administrador, o creá tu propia cuenta.</p>
+    <div id="authForgotPanel" style="display:none;">
+      <p class="eyebrow" style="text-align:center;">Recuperar contraseña</p>
+      <label>Usuario o email</label>
+      <input type="text" id="forgotUserOrEmail" placeholder="tu usuario o tu email">
+      <p class="auth-error" id="forgotError"></p>
+      <p class="card-sub" id="forgotSuccess" style="display:none; text-align:center; margin-top:10px;">Si el usuario existe, te enviamos un email con instrucciones. Revisá también la carpeta de spam.</p>
+      <button class="primary-btn" id="forgotBtn" style="margin-top:14px;">Enviar instrucciones</button>
+      <p class="auth-switch">¿Te acordaste? <a id="goToLoginFromForgot">Iniciá sesión</a></p>
+    </div>
+
+    <div id="authResetPanel" style="display:none;">
+      <p class="eyebrow" style="text-align:center;">Elegir nueva contraseña</p>
+      <label>Nueva contraseña</label>
+      <input type="password" id="resetNewPass" placeholder="mínimo 8 caracteres">
+      <label style="margin-top:10px;">Repetir contraseña</label>
+      <input type="password" id="resetNewPass2" placeholder="••••••••">
+      <p class="auth-error" id="resetError"></p>
+      <button class="primary-btn" id="resetBtn" style="margin-top:14px;">Guardar nueva contraseña</button>
+    </div>
+
+    <p class="auth-hint" id="authHintText">Para entrar a Coffee Lab necesitás crear una cuenta con tu email — es la única forma de acceder.</p>
     </div>
 </div>
 
@@ -423,14 +444,26 @@
 
   <div class="topbar">
     <div class="logo"><span class="num">1312</span><span class="sub">COFFEE LAB</span></div>
-    <div class="icon-btn" id="bellBtn"><span class="icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 6-3 8-3 8h18s-3-2-3-8"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span></div>
+    <div style="position:relative;">
+      <div class="icon-btn" id="bellBtn">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 6-3 8-3 8h18s-3-2-3-8"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span>
+        <span id="bellBadge" style="display:none; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%; background:var(--accent); border:1.5px solid var(--bg);"></span>
+      </div>
+      <div id="notifPanel" style="display:none; position:absolute; top:46px; right:0; width:300px; max-height:400px; overflow-y:auto; background:var(--panel); border:1.5px solid var(--line); border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.5); z-index:20; padding:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <p class="eyebrow" style="margin:0;">Notificaciones</p>
+          <a id="marcarTodasLeidasBtn" style="font-size:11px; color:var(--holo-2); cursor:pointer;">Marcar todas leídas</a>
+        </div>
+        <div id="notifList"></div>
+      </div>
+    </div>
   </div>
 
   <main>
 
     <!-- INICIO -->
     <div class="view show" id="view-inicio">
-      <h1 class="greet" id="greetName">Hola Jeremías,</h1>
+      <h1 class="greet" id="greetName">Hola,</h1>
       <p class="hint">¿Qué vas a explorar hoy?</p>
 
       <div class="card grad card-row" id="quickRegisterBtn" style="cursor:pointer;">
@@ -845,21 +878,43 @@
     <div class="view" id="view-comunidad">
       <h1 class="greet">Comunidad</h1>
       <p class="hint">Extracciones publicadas por otros usuarios — probalas, compará resultados y comentá.</p>
-      <button class="primary-btn" id="publicarExtraccionBtn" style="margin-bottom:16px;">Publicar mi última extracción</button>
+      <button class="primary-btn" id="publicarExtraccionBtn" data-nav="publicar-extraccion" style="margin-bottom:16px;">Publicar mi última extracción</button>
       <div id="comunidadList"></div>
+    </div>
+
+    <!-- PUBLICAR EN COMUNIDAD -->
+    <div class="view" id="view-publicar-extraccion">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="comunidad"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Publicar extracción</h1>
+      </div>
+      <p class="hint">Se publica tu última extracción guardada, con lo que quieras contar y una foto opcional.</p>
+      <div class="card">
+        <label>Contale algo a la comunidad (opcional)</label>
+        <textarea id="pubDescripcion" placeholder="Cómo salió, qué café usaste, qué notás..."></textarea>
+        <label style="margin-top:10px;">Foto de tu café (opcional)</label>
+        <input type="file" id="pubFotoInput" accept="image/jpeg,image/png,image/webp">
+        <div id="pubFotoPreviewBox" style="display:none; margin-top:10px;">
+          <img id="pubFotoPreview" style="width:100%; border-radius:12px; display:block;">
+        </div>
+        <p class="auth-error" id="pubError"></p>
+        <button class="primary-btn" id="pubSubmitBtn" style="margin-top:14px;">Publicar</button>
+      </div>
     </div>
 
     <!-- PERFIL -->
     <div class="view" id="view-perfil">
       <h1 class="greet">Perfil</h1>
       <div class="card" style="display:flex; align-items:center; gap:14px;">
-        <div class="avatar" style="width:52px; height:52px; font-size:16px;" id="perfilAvatar">J</div>
+        <div class="avatar" style="width:52px; height:52px; font-size:16px; cursor:pointer; overflow:hidden; position:relative;" id="perfilAvatar" title="Tocá para cambiar tu foto">–</div>
+        <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
         <div>
-          <p class="card-title" id="perfilNombre">Jeremías</p>
-          <p class="card-sub" id="perfilRol">Barista experto</p>
+          <p class="card-title" id="perfilNombre">Cargando...</p>
+          <p class="card-sub" id="perfilRol">—</p>
         </div>
         <button class="primary-btn" id="logoutBtn" style="width:auto; margin-left:auto; padding:8px 14px; font-size:12px;">Salir</button>
       </div>
+      <p class="card-sub" id="avatarUploadStatus" style="text-align:center; margin:-10px 0 16px;"></p>
       <div class="card">
         <p class="eyebrow">Tu actividad</p>
         <div class="stat-row" id="perfilStats"></div>
@@ -891,6 +946,13 @@
       <div class="card">
         <p class="eyebrow">Resumen</p>
         <div class="stat-row" id="adminStats"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Actividad y tránsito</p>
+        <div class="stat-row" id="adminActividadStats"></div>
+        <p class="card-sub" style="margin-top:12px; margin-bottom:6px;">Últimos accesos</p>
+        <div id="adminAccesosList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;"></div>
       </div>
 
       <div class="card">
@@ -947,7 +1009,7 @@
       .replace(/'/g, '&#39;');
   }
 
-  const API_BASE = 'http://localhost:4000/api';
+  const API_BASE = 'https://app-coffee-lab.onrender.com/api';
 
   function getToken(){ return window.localStorage.getItem('1312coffeelab_token'); }
   function setToken(t){ window.localStorage.setItem('1312coffeelab_token', t); }
@@ -984,7 +1046,7 @@
   let recetasCustom = [];
 
   // ---------- Navigation ----------
-  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas' };
+  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad' };
   const navTabs = ['inicio','explorar','registro','comunidad','perfil'];
 
   function showView(name){
@@ -1734,15 +1796,20 @@
     list.innerHTML = posts.map(p=>`
       <div class="card post-card">
         <div class="p-head">
-          <div class="avatar">${esc(p.user.username.slice(0,2).toUpperCase())}</div>
+          ${p.user.avatarUrl ? `<div class="avatar" style="overflow:hidden;"><img src="${esc(p.user.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar">${esc(p.user.username.slice(0,2).toUpperCase())}</div>`}
           <div>
             <p class="p-name">@${esc(p.user.username)}</p>
             <p class="p-meta">${esc(p.extraction.metodo)} · ${esc(p.extraction.ratio)} ${p.extraction.categoria ? '· '+esc(p.extraction.categoria) : ''}</p>
           </div>
         </div>
         <p class="p-text">${esc(p.descripcion || '')}</p>
+        ${p.fotoUrl ? `<img src="${esc(p.fotoUrl)}" alt="Foto del café" style="width:100%; border-radius:12px; margin-top:10px; display:block;">` : ''}
         <div class="p-actions"><span>💬 ${p.comments.length}</span></div>
-        ${p.comments.map(c=>`<p class="card-sub" style="margin-top:6px;">@${esc(c.user.username)}: ${esc(c.texto)}</p>`).join('')}
+        ${p.comments.map(c=>`
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            ${c.user.avatarUrl ? `<div class="avatar" style="width:22px; height:22px; font-size:9px; overflow:hidden; flex-shrink:0;"><img src="${esc(c.user.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar" style="width:22px; height:22px; font-size:9px; flex-shrink:0;">${esc(c.user.username.slice(0,2).toUpperCase())}</div>`}
+            <p class="card-sub">@${esc(c.user.username)}: ${esc(c.texto)}</p>
+          </div>`).join('')}
         <div style="display:flex; gap:8px; margin-top:10px;">
           <input type="text" class="comunidadCommentInput" data-post="${p.id}" placeholder="Comentar..." style="flex:1;">
           <button class="icon-btn" data-comment-post="${p.id}">
@@ -1766,15 +1833,119 @@
     });
   }
 
-  document.getElementById('publicarExtraccionBtn').addEventListener('click', async ()=>{
+  // El botón de la Comunidad ahora solo navega (data-nav="publicar-extraccion"),
+  // ya no dispara el prompt() directamente — la lógica real vive acá abajo.
+  document.getElementById('pubFotoInput').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    const box = document.getElementById('pubFotoPreviewBox');
+    if(!file){ box.style.display = 'none'; return; }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      document.getElementById('pubFotoPreview').src = reader.result;
+      box.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('pubSubmitBtn').addEventListener('click', async ()=>{
     if(!sessionUser){ toast('Iniciá sesión para publicar.'); return; }
     if(!extracciones.length){ toast('Registrá una extracción primero.'); return; }
-    const descripcion = prompt('Contá algo sobre esta extracción (opcional):', '') || '';
+    const errEl = document.getElementById('pubError');
+    errEl.textContent = '';
+    const descripcion = document.getElementById('pubDescripcion').value.trim();
+    const file = document.getElementById('pubFotoInput').files[0];
+    const btn = document.getElementById('pubSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Publicando...';
     try{
-      await apiFetch('/community', { method:'POST', body: JSON.stringify({ extractionId: extracciones[0].id, descripcion }) });
+      let fotoUrl = undefined;
+      if(file){
+        const formData = new FormData();
+        formData.append('imagen', file);
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/uploads/community-photo`, {
+          method:'POST', headers:{ 'Authorization': `Bearer ${token}` }, body: formData,
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || 'No se pudo subir la foto.');
+        fotoUrl = data.url;
+      }
+      await apiFetch('/community', { method:'POST', body: JSON.stringify({ extractionId: extracciones[0].id, descripcion, fotoUrl }) });
+      document.getElementById('pubDescripcion').value = '';
+      document.getElementById('pubFotoInput').value = '';
+      document.getElementById('pubFotoPreviewBox').style.display = 'none';
       toast('Extracción publicada en la comunidad');
       await renderComunidad();
-    }catch(e){ toast('No se pudo publicar: ' + e.message); }
+      showView('comunidad');
+    }catch(e){ errEl.textContent = e.message; }
+    btn.disabled = false;
+    btn.textContent = 'Publicar';
+  });
+
+  // ---------- NOTIFICACIONES ----------
+  function tiempoRelativo(fecha){
+    const diffMs = Date.now() - new Date(fecha).getTime();
+    const min = Math.floor(diffMs / 60000);
+    if(min < 1) return 'ahora';
+    if(min < 60) return `hace ${min}m`;
+    const horas = Math.floor(min/60);
+    if(horas < 24) return `hace ${horas}h`;
+    return `hace ${Math.floor(horas/24)}d`;
+  }
+
+  async function refreshNotifBadge(){
+    if(!sessionUser) return;
+    try{
+      const data = await apiFetch('/notifications');
+      document.getElementById('bellBadge').style.display = data.noLeidas > 0 ? 'block' : 'none';
+      return data;
+    }catch(e){ return null; }
+  }
+
+  async function renderNotifPanel(){
+    const list = document.getElementById('notifList');
+    list.innerHTML = '<p class="empty-note">Cargando...</p>';
+    const data = await refreshNotifBadge();
+    if(!data){ list.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
+    if(data.notifications.length === 0){
+      list.innerHTML = '<p class="empty-note">No tenés notificaciones todavía.</p>';
+      return;
+    }
+    list.innerHTML = data.notifications.map(n=>`
+      <div class="notif-item" data-notif-id="${n.id}" style="padding:10px 6px; border-bottom:1px solid var(--line-soft); cursor:pointer; ${n.leida ? 'opacity:.55;' : ''}">
+        <p style="font-size:12.5px; margin:0; line-height:1.4;">${esc(n.mensaje)}</p>
+        <p class="card-sub" style="margin-top:3px; font-size:10.5px;">${tiempoRelativo(n.createdAt)}</p>
+      </div>`).join('');
+    document.querySelectorAll('.notif-item').forEach(item=>{
+      item.addEventListener('click', async ()=>{
+        try{ await apiFetch(`/notifications/${item.dataset.notifId}/leida`, { method:'PUT' }); }
+        catch(e){}
+        item.style.opacity = '.55';
+        refreshNotifBadge();
+      });
+    });
+  }
+
+  document.getElementById('bellBtn').addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    if(!sessionUser){ toast('Iniciá sesión para ver tus notificaciones.'); return; }
+    const panel = document.getElementById('notifPanel');
+    const abierto = panel.style.display === 'block';
+    panel.style.display = abierto ? 'none' : 'block';
+    if(!abierto) await renderNotifPanel();
+  });
+  document.addEventListener('click', (e)=>{
+    const panel = document.getElementById('notifPanel');
+    if(panel.style.display === 'block' && !panel.contains(e.target) && e.target.id !== 'bellBtn'){
+      panel.style.display = 'none';
+    }
+  });
+  document.getElementById('marcarTodasLeidasBtn').addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    try{
+      await apiFetch('/notifications/leer-todas', { method:'PUT' });
+      await renderNotifPanel();
+    }catch(e){}
   });
 
   // ---------- AUTENTICACIÓN (backend real) ----------
@@ -1794,11 +1965,60 @@
   function showAuthPanel(which){
     document.getElementById('authLoginPanel').style.display = which==='login' ? 'block' : 'none';
     document.getElementById('authSignupPanel').style.display = which==='signup' ? 'block' : 'none';
+    document.getElementById('authForgotPanel').style.display = which==='forgot' ? 'block' : 'none';
+    document.getElementById('authResetPanel').style.display = which==='reset' ? 'block' : 'none';
+    document.getElementById('authHintText').style.display = which==='reset' ? 'none' : 'block';
     document.getElementById('loginError').textContent = '';
     document.getElementById('signupError').textContent = '';
+    const forgotErr = document.getElementById('forgotError'); if(forgotErr) forgotErr.textContent = '';
+    const resetErr = document.getElementById('resetError'); if(resetErr) resetErr.textContent = '';
+    document.getElementById('forgotSuccess').style.display = 'none';
   }
   document.getElementById('goToSignup').addEventListener('click', ()=> showAuthPanel('signup'));
   document.getElementById('goToLogin').addEventListener('click', ()=> showAuthPanel('login'));
+  document.getElementById('goToForgot').addEventListener('click', ()=> showAuthPanel('forgot'));
+  document.getElementById('goToLoginFromForgot').addEventListener('click', ()=> showAuthPanel('login'));
+
+  document.getElementById('forgotBtn').addEventListener('click', async ()=>{
+    const usernameOrEmail = document.getElementById('forgotUserOrEmail').value.trim();
+    const errEl = document.getElementById('forgotError');
+    errEl.textContent = '';
+    if(!usernameOrEmail){ errEl.textContent = 'Ingresá tu usuario o email.'; return; }
+    try{
+      await apiFetch('/auth/forgot-password', { method:'POST', body: JSON.stringify({ usernameOrEmail }) });
+      document.getElementById('forgotSuccess').style.display = 'block';
+      document.getElementById('forgotUserOrEmail').value = '';
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  let resetToken = null;
+  document.getElementById('resetBtn').addEventListener('click', async ()=>{
+    const p1 = document.getElementById('resetNewPass').value;
+    const p2 = document.getElementById('resetNewPass2').value;
+    const errEl = document.getElementById('resetError');
+    errEl.textContent = '';
+    if(p1.length < 8){ errEl.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+    if(p1 !== p2){ errEl.textContent = 'Las contraseñas no coinciden.'; return; }
+    try{
+      await apiFetch('/auth/reset-password', { method:'POST', body: JSON.stringify({ token: resetToken, newPassword: p1 }) });
+      showAuthPanel('login');
+      toast('Contraseña actualizada. Ya podés iniciar sesión.');
+      // Limpia el token de la URL para que no quede visible ni reusable.
+      window.history.replaceState({}, '', window.location.pathname);
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  // Si la app se abre desde el link del email de recuperación
+  // (?reset=TOKEN), se muestra directo la pantalla para elegir la
+  // contraseña nueva.
+  (function checkResetTokenInUrl(){
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('reset');
+    if(token){
+      resetToken = token;
+      showAuthPanel('reset');
+    }
+  })();
 
   async function currentUser(){ return sessionUser; }
 
@@ -1807,19 +2027,56 @@
     await refreshAccountUI();
     await loadExtracciones();
     renderToday();
+    await refreshNotifBadge();
   }
 
   async function refreshAccountUI(){
     const user = sessionUser;
     if(!user) return;
     const initials = user.username.slice(0,2).toUpperCase();
-    document.getElementById('perfilAvatar').textContent = initials;
+    const avatarEl = document.getElementById('perfilAvatar');
+    avatarEl.innerHTML = user.avatarUrl
+      ? `<img src="${esc(user.avatarUrl)}" alt="Tu foto de perfil" style="width:100%; height:100%; object-fit:cover;">`
+      : esc(initials);
     document.getElementById('perfilNombre').textContent = user.username;
     const roleLabels = { usuario:'Usuario registrado', barista:'Barista', administrador:'Administrador' };
     document.getElementById('perfilRol').textContent = roleLabels[user.role] || user.role;
     document.getElementById('adminEntryCard').style.display = user.role === 'administrador' ? 'block' : 'none';
+    const greetEl = document.getElementById('greetName');
+    if(greetEl) greetEl.textContent = `Hola ${user.username},`;
   }
 
+  // ---------- Subir foto de perfil ----------
+  document.getElementById('perfilAvatar').addEventListener('click', ()=>{
+    if(!sessionUser){ toast('Iniciá sesión primero.'); return; }
+    document.getElementById('avatarFileInput').click();
+  });
+  document.getElementById('avatarFileInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const statusEl = document.getElementById('avatarUploadStatus');
+    statusEl.textContent = 'Subiendo...';
+    const formData = new FormData();
+    formData.append('imagen', file);
+    try{
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/uploads/avatar`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || 'No se pudo subir la imagen.');
+      sessionUser.avatarUrl = data.avatarUrl;
+      setSession(sessionUser);
+      await refreshAccountUI();
+      statusEl.textContent = 'Foto actualizada.';
+      setTimeout(()=> statusEl.textContent = '', 2500);
+    }catch(err){
+      statusEl.textContent = err.message;
+    }
+    e.target.value = '';
+  });
   document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const username = document.getElementById('loginUser').value.trim();
     const pass = document.getElementById('loginPass').value;
@@ -1846,9 +2103,10 @@
     const pass2 = document.getElementById('signupPass2').value;
     const errEl = document.getElementById('signupError');
     if(!username || !pass){ errEl.textContent = 'Completá usuario y contraseña.'; return; }
+    if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ errEl.textContent = 'Ingresá un email válido — es obligatorio para crear tu cuenta.'; return; }
     if(pass !== pass2){ errEl.textContent = 'Las contraseñas no coinciden.'; return; }
     try{
-      const data = await apiFetch('/auth/register', { method:'POST', body: JSON.stringify({ username, email: email || undefined, password: pass }) });
+      const data = await apiFetch('/auth/register', { method:'POST', body: JSON.stringify({ username, email, password: pass }) });
       setToken(data.token);
       sessionUser = data.user;
       setSession(data.user);
@@ -1868,6 +2126,8 @@
     showAuthPanel('login');
     document.getElementById('loginUser').value = '';
     document.getElementById('loginPass').value = '';
+    document.getElementById('bellBadge').style.display = 'none';
+    document.getElementById('notifPanel').style.display = 'none';
     showView('inicio');
   });
 
@@ -1877,9 +2137,11 @@
     if(!user || user.role !== 'administrador'){ showView('perfil'); return; }
     let users = [];
     let misExtracciones = [];
+    let actividad = null;
     try{
       users = await apiFetch('/users');
       misExtracciones = await apiFetch('/extractions');
+      actividad = await apiFetch('/users/actividad');
     }catch(e){
       toast('No se pudo cargar el panel de administrador: ' + e.message);
       return;
@@ -1890,9 +2152,28 @@
       <div class="stat"><div class="k">Admins</div><div class="v">${admins}</div></div>
       <div class="stat"><div class="k">Extracciones (mías)</div><div class="v">${misExtracciones.length}</div></div>`;
 
+    if(actividad){
+      document.getElementById('adminActividadStats').innerHTML = `
+        <div class="stat"><div class="k">Activos ahora</div><div class="v">${actividad.activosAhora}</div></div>
+        <div class="stat"><div class="k">Accesos hoy</div><div class="v">${actividad.totalAccesosHoy}</div></div>`;
+      const lista = document.getElementById('adminAccesosList');
+      if(actividad.ultimosAccesos.length === 0){
+        lista.innerHTML = '<p class="empty-note">Sin accesos registrados todavía.</p>';
+      } else {
+        lista.innerHTML = actividad.ultimosAccesos.map(a=>`
+          <div style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px solid var(--line-soft);">
+            <div>
+              <p style="font-size:12px; margin:0;">@${esc(a.user.username)}</p>
+              <p class="card-sub" style="font-size:10.5px;">${esc(a.ip || 'IP desconocida')}</p>
+            </div>
+            <p class="card-sub" style="font-size:10.5px; text-align:right; white-space:nowrap;">${tiempoRelativo(a.createdAt)}</p>
+          </div>`).join('');
+      }
+    }
+
     document.getElementById('adminUserList').innerHTML = users.map(u=>`
       <div class="card" style="margin-bottom:0; padding:14px; display:flex; align-items:center; gap:10px;">
-        <div class="avatar" style="width:38px; height:38px; font-size:12px;">${esc(u.username.slice(0,2).toUpperCase())}</div>
+        ${u.avatarUrl ? `<div class="avatar" style="width:38px; height:38px; overflow:hidden;"><img src="${esc(u.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar" style="width:38px; height:38px; font-size:12px;">${esc(u.username.slice(0,2).toUpperCase())}</div>`}
         <div style="flex:1;">
           <p class="card-title" style="font-size:13.5px;">${esc(u.username)} ${u.role==='administrador' ? '· <span style=\"color:var(--holo-2);\">admin</span>' : u.role==='barista' ? '· barista' : ''}</p>
           <p class="card-sub">${esc(u.email || 'sin email')} · desde ${new Date(u.createdAt).toLocaleDateString('es-AR')}</p>

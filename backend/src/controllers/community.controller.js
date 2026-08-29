@@ -48,4 +48,18 @@ async function comentar(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listarFeed, publicar, comentar };
+async function eliminarComentario(req, res, next) {
+  try {
+    const comment = await prisma.comment.findUnique({ where: { id: req.params.id } });
+    if (!comment) return res.status(404).json({ error: 'Comentario no encontrado.' });
+    const esAutor = comment.userId === req.user.sub;
+    const esAdmin = req.user.role === 'administrador';
+    if (!esAutor && !esAdmin) {
+      return res.status(403).json({ error: 'No tenés permiso para borrar este comentario.' });
+    }
+    await prisma.comment.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (e) { next(e); }
+}
+
+module.exports = { listarFeed, publicar, comentar, eliminarComentario };

@@ -123,6 +123,10 @@ migra y qué se reconstruye.
   (con login en los últimos 15 minutos), accesos totales del día, y el
   detalle de los últimos 30 accesos.
 - ✅ Logo del topbar agrandado.
+- ✅ **Borrar comentarios**: el autor del comentario o cualquier
+  administrador puede borrarlo (ícono ✕ al lado, visible solo si
+  corresponde) — validado también del lado del servidor en
+  `DELETE /api/community/comentarios/:id`, no solo ocultando el botón.
 - ✅ **Biblioteca científica reestructurada**: la sección "Ciencia" dejó
   de ser una lista de tarjetas sueltas y ahora sigue el formato
   Concepto → Explicación → Variables → Evidencia científica →

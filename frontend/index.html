@@ -1805,11 +1805,15 @@
         <p class="p-text">${esc(p.descripcion || '')}</p>
         ${p.fotoUrl ? `<img src="${esc(p.fotoUrl)}" alt="Foto del café" style="width:100%; border-radius:12px; margin-top:10px; display:block;">` : ''}
         <div class="p-actions"><span>💬 ${p.comments.length}</span></div>
-        ${p.comments.map(c=>`
+        ${p.comments.map(c=>{
+          const puedeBorrar = sessionUser && (sessionUser.id === c.userId || sessionUser.role === 'administrador');
+          return `
           <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
             ${c.user.avatarUrl ? `<div class="avatar" style="width:22px; height:22px; font-size:9px; overflow:hidden; flex-shrink:0;"><img src="${esc(c.user.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar" style="width:22px; height:22px; font-size:9px; flex-shrink:0;">${esc(c.user.username.slice(0,2).toUpperCase())}</div>`}
-            <p class="card-sub">@${esc(c.user.username)}: ${esc(c.texto)}</p>
-          </div>`).join('')}
+            <p class="card-sub" style="flex:1;">@${esc(c.user.username)}: ${esc(c.texto)}</p>
+            ${puedeBorrar ? `<span data-delete-comment="${c.id}" style="cursor:pointer; color:var(--text-faint); font-size:14px; flex-shrink:0;" title="Borrar comentario">✕</span>` : ''}
+          </div>`;
+        }).join('')}
         <div style="display:flex; gap:8px; margin-top:10px;">
           <input type="text" class="comunidadCommentInput" data-post="${p.id}" placeholder="Comentar..." style="flex:1;">
           <button class="icon-btn" data-comment-post="${p.id}">
@@ -1829,6 +1833,16 @@
           await apiFetch(`/community/${postId}/comentarios`, { method:'POST', body: JSON.stringify({ texto }) });
           await renderComunidad();
         }catch(e){ toast('No se pudo comentar: ' + e.message); }
+      });
+    });
+    document.querySelectorAll('[data-delete-comment]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        if(!confirm('¿Borrar este comentario?')) return;
+        try{
+          await apiFetch(`/community/comentarios/${el.dataset.deleteComment}`, { method:'DELETE' });
+          await renderComunidad();
+          toast('Comentario borrado');
+        }catch(e){ toast('No se pudo borrar: ' + e.message); }
       });
     });
   }

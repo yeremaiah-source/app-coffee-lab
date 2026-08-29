@@ -5,8 +5,27 @@ const { estimateTDS, registrarMedicionReal } = require('../utils/tdsEstimator');
 async function crear(req, res, next) {
   try {
     const { metodo, cafe, molienda, dosisG, aguaG, tiempoSeg, temperaturaC, tds, tueste, notas } = req.body;
-    if (!metodo || !dosisG || !aguaG) {
-      return res.status(400).json({ error: 'Método, dosis y agua son obligatorios.' });
+
+    // Validación estricta del lado del servidor — nunca se confía en que
+    // el frontend ya validó. Rechaza tipos incorrectos, negativos, cero,
+    // y valores fuera de un rango físicamente realista.
+    if (!metodo || typeof metodo !== 'string') {
+      return res.status(400).json({ error: 'El método es obligatorio.' });
+    }
+    if (typeof dosisG !== 'number' || dosisG <= 0 || dosisG > 200) {
+      return res.status(400).json({ error: 'La dosis tiene que ser un número mayor a 0 y menor a 200g.' });
+    }
+    if (typeof aguaG !== 'number' || aguaG <= 0 || aguaG > 5000) {
+      return res.status(400).json({ error: 'El agua/rendimiento tiene que ser un número mayor a 0 y menor a 5000g.' });
+    }
+    if (tiempoSeg !== undefined && tiempoSeg !== null && (typeof tiempoSeg !== 'number' || tiempoSeg < 0 || tiempoSeg > 86400)) {
+      return res.status(400).json({ error: 'El tiempo tiene que ser un número válido (en segundos).' });
+    }
+    if (temperaturaC !== undefined && temperaturaC !== null && (typeof temperaturaC !== 'number' || temperaturaC < 0 || temperaturaC > 100)) {
+      return res.status(400).json({ error: 'La temperatura tiene que estar entre 0 y 100°C.' });
+    }
+    if (tds !== undefined && tds !== null && (typeof tds !== 'number' || tds <= 0 || tds > 30)) {
+      return res.status(400).json({ error: 'El TDS medido tiene que ser un número entre 0 y 30%.' });
     }
 
     let tdsFinal = tds || null;

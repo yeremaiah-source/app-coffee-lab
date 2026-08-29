@@ -1,5 +1,6 @@
 const prisma = require('../prismaClient');
 const { crearNotificacion } = require('./notifications.controller');
+const { registrarAuditoria } = require('../utils/auditLog');
 
 async function listarFeed(req, res, next) {
   try {
@@ -50,7 +51,7 @@ async function comentar(req, res, next) {
 
 async function eliminarComentario(req, res, next) {
   try {
-    const comment = await prisma.comment.findUnique({ where: { id: req.params.id } });
+    const comment = await prisma.comment.findUnique({ where: { id: req.params.id }, include: { user: { select: { username: true } } } });
     if (!comment) return res.status(404).json({ error: 'Comentario no encontrado.' });
     const esAutor = comment.userId === req.user.sub;
     const esAdmin = req.user.role === 'administrador';
@@ -58,13 +59,21 @@ async function eliminarComentario(req, res, next) {
       return res.status(403).json({ error: 'No tenés permiso para borrar este comentario.' });
     }
     await prisma.comment.delete({ where: { id: req.params.id } });
+    if (esAdmin && !esAutor) {
+      await registrarAuditoria({
+        adminId: req.user.sub,
+        adminUsername: req.user.username,
+        accion: 'moderar_comentario',
+        detalle: `Borró un comentario de @${comment.user.username}: "${comment.texto.slice(0, 80)}"`,
+      });
+    }
     res.status(204).send();
   } catch (e) { next(e); }
 }
 
 async function eliminarPost(req, res, next) {
   try {
-    const post = await prisma.communityPost.findUnique({ where: { id: req.params.id } });
+    const post = await prisma.communityPost.findUnique({ where: { id: req.params.id }, include: { user: { select: { username: true } } } });
     if (!post) return res.status(404).json({ error: 'Publicación no encontrada.' });
     const esAutor = post.userId === req.user.sub;
     const esAdmin = req.user.role === 'administrador';
@@ -77,6 +86,14 @@ async function eliminarPost(req, res, next) {
       prisma.comment.deleteMany({ where: { postId: req.params.id } }),
       prisma.communityPost.delete({ where: { id: req.params.id } }),
     ]);
+    if (esAdmin && !esAutor) {
+      await registrarAuditoria({
+        adminId: req.user.sub,
+        adminUsername: req.user.username,
+        accion: 'moderar_publicacion',
+        detalle: `Borró una publicación de @${post.user.username}`,
+      });
+    }
     res.status(204).send();
   } catch (e) { next(e); }
 }

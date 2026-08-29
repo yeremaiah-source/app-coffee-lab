@@ -123,6 +123,12 @@ migra y qué se reconstruye.
   (con login en los últimos 15 minutos), accesos totales del día, y el
   detalle de los últimos 30 accesos.
 - ✅ Logo del topbar agrandado.
+- ✅ **Perfil público de usuario**: tocando el nombre de cualquiera (en
+  la comunidad, en sus comentarios, o como autor de una receta) se abre
+  su perfil con su foto, cuántas recetas publicó, cuántas extracciones
+  compartió, y el listado de ambas — vía
+  `GET /api/users/:username/perfil-publico` (público, no requiere
+  login). No expone email ni rol, solo lo que ya era público.
 - ✅ **Moderación de la comunidad**: el autor o un administrador pueden
   borrar tanto comentarios individuales (`DELETE
   /api/community/comentarios/:id`) como publicaciones enteras
@@ -148,3 +154,51 @@ migra y qué se reconstruye.
 3. Si el backend corre en otro puerto o ya lo desplegaste en Render,
    cambiá la constante `API_BASE` al principio del `<script>` del
    frontend.
+
+## Informe de auditoría y hardening (esta ronda)
+
+**Nada se borró ni se rompió** — todo lo listado abajo se agregó sobre
+lo que ya funcionaba, sin tocar datos existentes.
+
+### Errores encontrados y corregidos
+- El ratio en vivo del formulario de registro mostraba **"1:0"** antes
+  de completar dosis y agua, en vez de indicar que faltaban datos.
+  Ahora muestra "1:—".
+- El motor de análisis (`extractionAnalysis.js`) podía aceptar dosis o
+  agua negativas (el chequeo `!dosisG` no detecta números negativos,
+  solo cero/vacío) y no validaba que el TDS estuviera en un rango
+  físicamente posible. Ahora rechaza esos casos explícitamente y
+  devuelve "Datos insuficientes para calcular" en vez de un número sin
+  sentido.
+- El endpoint de crear extracción (`POST /api/extractions`) confiaba en
+  que el frontend ya había validado los datos. Ahora valida en el
+  servidor: dosis y agua > 0 y dentro de rangos realistas, tiempo y
+  temperatura no negativos, TDS entre 0 y 30%.
+
+### Seguridad reforzada
+- **Auditoría de acciones administrativas**: nueva tabla
+  `AdminAuditLog` que registra cambios de rol, eliminación de usuarios,
+  y moderación de comunidad (cuándo un admin borra contenido ajeno) —
+  quién lo hizo y qué hizo, nunca contraseñas ni tokens. Visible en el
+  panel de administrador.
+- Control de acceso horizontal (IDOR) revisado: un usuario solo puede
+  ver/comparar sus propias extracciones (`listarMias`, `comparar` ya
+  filtraban por `userId`); las recetas son intencionalmente públicas
+  (es la función de la app), pero editarlas sigue exigiendo ser el
+  autor o admin.
+- No se encontró ningún endpoint que permita a un usuario cambiar su
+  propio rol — el registro siempre crea cuentas con rol `usuario`.
+
+### Lo que ya estaba bien y se mantiene igual
+- Contraseñas con bcrypt, JWT con expiración, rate limiting en
+  login/registro/recuperación, CORS restringido por entorno, Helmet,
+  escape de XSS en todo el contenido de usuarios, whitelist de campos
+  editables en recetas (ya corregida una ronda anterior).
+
+### Riesgos que siguen pendientes (documentados, no ocultos)
+- MFA para cuentas de administrador: no implementado.
+- Bloqueo de cuenta tras intentos fallidos repetidos (hoy el rate
+  limit es por IP, no por cuenta puntual).
+- Auto-deploy de Render inestable — se viene forzando manualmente.
+- Actualización de dependencias: no se hizo una revisión de
+  vulnerabilidades conocidas (`npm audit`) en esta ronda.

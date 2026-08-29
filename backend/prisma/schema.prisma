@@ -44,6 +44,18 @@ model LoginEvent {
   createdAt DateTime @default(now())
 }
 
+// Auditoría de acciones administrativas sensibles: quién hizo qué y
+// cuándo. Nunca guarda contraseñas ni tokens, solo una descripción de
+// la acción.
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  adminId       String
+  adminUsername String
+  accion        String
+  detalle       String?
+  createdAt     DateTime @default(now())
+}
+
 // Notificaciones reales: se generan cuando alguien comenta tu
 // publicación o duplica una receta tuya.
 model Notification {

@@ -10,13 +10,20 @@
  */
 
 function calcularExtraccion({ dosisG, aguaG, tds, tiempoSeg, metodo }) {
-  if (!dosisG || !aguaG) {
-    return { ey: null, categoria: null, recomendacion: 'Faltan dosis y/o agua para calcular.' };
+  // Validación estricta: nunca se calcula ni se muestra un ratio con
+  // datos inválidos o insuficientes. "Datos insuficientes" siempre le
+  // gana a inventar un número.
+  const dosisValida = typeof dosisG === 'number' && dosisG > 0;
+  const aguaValida = typeof aguaG === 'number' && aguaG > 0;
+  if (!dosisValida || !aguaValida) {
+    return {
+      ratio: null,
+      ey: null,
+      categoria: null,
+      recomendacion: 'Datos insuficientes para calcular: dosis y agua tienen que ser mayores a cero.',
+    };
   }
 
-  // Si no hay TDS medido (refractómetro), se deja en null: el EY real
-  // solo se puede calcular con un TDS medido. Ratio y rendimiento sí se
-  // pueden mostrar siempre.
   const rendimientoBebidaG = aguaG; // aproximación estándar sin medir absorción exacta
   const ratioNum = aguaG / dosisG;
 
@@ -24,7 +31,14 @@ function calcularExtraccion({ dosisG, aguaG, tds, tiempoSeg, metodo }) {
   let categoria = null;
   let recomendacion = 'Cargá el TDS medido con un refractómetro para obtener el EY y una recomendación de ajuste.';
 
-  if (tds) {
+  // El TDS de un café nunca es negativo ni realistamente mayor a ~30% —
+  // fuera de ese rango se descarta el cálculo de EY en vez de mostrar
+  // un número sin sentido.
+  const tdsValido = typeof tds === 'number' && tds > 0 && tds <= 30;
+
+  if (tds !== null && tds !== undefined && !tdsValido) {
+    recomendacion = 'El TDS cargado está fuera de un rango realista (0–30%). Revisá el valor antes de guardar.';
+  } else if (tdsValido) {
     ey = Number(((tds * rendimientoBebidaG) / dosisG).toFixed(2));
 
     if (ey < 18) {

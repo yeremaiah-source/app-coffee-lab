@@ -613,7 +613,7 @@
         </div>
         <div class="card-row" style="margin-bottom:4px;">
           <span class="eyebrow" style="margin:0;">Ratio en vivo</span>
-          <span style="font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--purple-2);" id="rRatioLive">1:0</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--purple-2);" id="rRatioLive">1:—</span>
         </div>
         <button class="primary-btn" id="saveRegBtn">Guardar extracción</button>
       </div>
@@ -936,6 +936,28 @@
     </div>
 
     <!-- ADMIN -->
+    <!-- PERFIL PUBLICO -->
+    <div class="view" id="view-perfil-publico">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" id="perfilPublicoBackBtn"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Perfil</h1>
+      </div>
+      <div class="card" style="display:flex; align-items:center; gap:14px;">
+        <div class="avatar" style="width:52px; height:52px; font-size:16px;" id="ppAvatar">–</div>
+        <div>
+          <p class="card-title" id="ppUsername">—</p>
+          <p class="card-sub" id="ppMiembroDesde">—</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat-row" id="ppStats"></div>
+      </div>
+      <p class="eyebrow" style="margin-top:22px;">Recetas publicadas</p>
+      <div id="ppRecetasList"></div>
+      <p class="eyebrow" style="margin-top:22px;">Extracciones compartidas</p>
+      <div id="ppPostsList"></div>
+    </div>
+
     <div class="view" id="view-admin">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
         <div class="icon-btn back" data-back="perfil"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
@@ -958,6 +980,11 @@
       <div class="card">
         <p class="eyebrow">Usuarios registrados</p>
         <div id="adminUserList" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Auditoría de acciones administrativas</p>
+        <div id="adminAuditoriaList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;"></div>
       </div>
 
       <div class="card grad">
@@ -1071,6 +1098,50 @@
   });
   document.getElementById('quickRegisterBtn').addEventListener('click', ()=> showView('registro'));
 
+  // ---------- PERFIL PÚBLICO ----------
+  let perfilPublicoVolverA = 'comunidad';
+  async function abrirPerfilPublico(username, origen){
+    perfilPublicoVolverA = origen || 'comunidad';
+    showView('perfil-publico');
+    let data;
+    try{ data = await apiFetch(`/users/${encodeURIComponent(username)}/perfil-publico`); }
+    catch(e){ toast('No se pudo cargar el perfil: ' + e.message); return; }
+
+    document.getElementById('ppAvatar').innerHTML = data.avatarUrl
+      ? `<img src="${esc(data.avatarUrl)}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`
+      : esc(data.username.slice(0,2).toUpperCase());
+    document.getElementById('ppUsername').textContent = '@' + data.username;
+    document.getElementById('ppMiembroDesde').textContent = 'Miembro desde ' + new Date(data.miembroDesde).toLocaleDateString('es-AR');
+    document.getElementById('ppStats').innerHTML = `
+      <div class="stat"><div class="k">Recetas</div><div class="v">${data.recetas.length}</div></div>
+      <div class="stat"><div class="k">Extracciones compartidas</div><div class="v">${data.posts.length}</div></div>`;
+
+    const recetasList = document.getElementById('ppRecetasList');
+    recetasList.innerHTML = data.recetas.length === 0
+      ? '<p class="empty-note">Todavía no publicó recetas.</p>'
+      : data.recetas.map(r=>`
+        <div class="card recipe-card">
+          <div class="swatch"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 8h13v6a5 5 0 01-5 5H8a5 5 0 01-5-5V8z"/><path d="M16 8h2a3 3 0 010 6h-2"/></svg></span></div>
+          <div>
+            <span class="tag">${esc(r.metodo)}</span>
+            <p class="rc-title">${esc(r.nombre)}</p>
+            <p class="rc-meta">${esc(r.ratio || '')}</p>
+          </div>
+        </div>`).join('');
+
+    const postsList = document.getElementById('ppPostsList');
+    postsList.innerHTML = data.posts.length === 0
+      ? '<p class="empty-note">Todavía no compartió extracciones.</p>'
+      : data.posts.map(p=>`
+        <div class="card post-card">
+          <p class="p-meta">${esc(p.extraction.metodo)} · ${esc(p.extraction.ratio)} ${p.extraction.categoria ? '· '+esc(p.extraction.categoria) : ''}</p>
+          <p class="p-text">${esc(p.descripcion || '')}</p>
+          ${p.fotoUrl ? `<img src="${esc(p.fotoUrl)}" alt="Foto del café" style="width:100%; border-radius:12px; margin-top:10px; display:block;">` : ''}
+          <div class="p-actions"><span>💬 ${p.comments.length}</span></div>
+        </div>`).join('');
+  }
+  document.getElementById('perfilPublicoBackBtn').addEventListener('click', ()=> showView(perfilPublicoVolverA));
+
   function toast(msg){
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -1148,7 +1219,7 @@
   function updateRatioLive(){
     const d = parseFloat(rDosis.value), r = parseFloat(rRendimiento.value);
     if(d>0 && r>0) rRatioLive.textContent = '1:' + (r/d).toFixed(1);
-    else rRatioLive.textContent = '1:0';
+    else rRatioLive.textContent = '1:—';
   }
   rDosis.addEventListener('input', updateRatioLive);
   rRendimiento.addEventListener('input', updateRatioLive);
@@ -1351,7 +1422,7 @@
           <p class="rc-title">${esc(r.nombre)}</p>
           <p class="rc-meta">${esc(r.ratio)}${r.meta ? ' · '+esc(r.meta) : ''}</p>
           <p class="rc-desc">${esc(r.desc)}</p>
-          ${r.autor ? `<p class="card-sub" style="margin-top:4px;">por ${esc(r.autor)}${r.raw && r.raw.version > 1 ? ' · v'+esc(r.raw.version) : ''}</p>` : ''}
+          ${r.autor ? `<p class="card-sub" style="margin-top:4px; cursor:pointer;" data-open-perfil="${esc(r.autor)}">por ${esc(r.autor)}${r.raw && r.raw.version > 1 ? ' · v'+esc(r.raw.version) : ''}</p>` : ''}
         </div>
         <div style="display:flex; flex-direction:column; gap:6px;">
           ${isOwner ? `<button class="icon-btn" data-edit-recipe="${r.id}" title="Editar">
@@ -1379,6 +1450,12 @@
       btn.addEventListener('click', ()=>{
         const receta = recetasCustom.find(r=>r.id === btn.dataset.editRecipe);
         if(receta) openEditRecipe(receta.raw);
+      });
+    });
+    document.querySelectorAll('[data-open-perfil]').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        abrirPerfilPublico(el.dataset.openPerfil, 'recetas');
       });
     });
   }
@@ -1800,7 +1877,7 @@
         <div class="p-head">
           ${p.user.avatarUrl ? `<div class="avatar" style="overflow:hidden;"><img src="${esc(p.user.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar">${esc(p.user.username.slice(0,2).toUpperCase())}</div>`}
           <div style="flex:1;">
-            <p class="p-name">@${esc(p.user.username)}</p>
+            <p class="p-name" data-open-perfil="${esc(p.user.username)}" style="cursor:pointer;">@${esc(p.user.username)}</p>
             <p class="p-meta">${esc(p.extraction.metodo)} · ${esc(p.extraction.ratio)} ${p.extraction.categoria ? '· '+esc(p.extraction.categoria) : ''}</p>
           </div>
           ${puedeBorrarPost ? `<span data-delete-post="${p.id}" style="cursor:pointer; color:var(--text-faint); font-size:16px;" title="Borrar publicación">✕</span>` : ''}
@@ -1813,7 +1890,7 @@
           return `
           <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
             ${c.user.avatarUrl ? `<div class="avatar" style="width:22px; height:22px; font-size:9px; overflow:hidden; flex-shrink:0;"><img src="${esc(c.user.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar" style="width:22px; height:22px; font-size:9px; flex-shrink:0;">${esc(c.user.username.slice(0,2).toUpperCase())}</div>`}
-            <p class="card-sub" style="flex:1;">@${esc(c.user.username)}: ${esc(c.texto)}</p>
+            <p class="card-sub" style="flex:1;"><span data-open-perfil="${esc(c.user.username)}" style="cursor:pointer; font-weight:600;">@${esc(c.user.username)}</span>: ${esc(c.texto)}</p>
             ${puedeBorrar ? `<span data-delete-comment="${c.id}" style="cursor:pointer; color:var(--text-faint); font-size:14px; flex-shrink:0;" title="Borrar comentario">✕</span>` : ''}
           </div>`;
         }).join('')}
@@ -1857,6 +1934,12 @@
           await renderComunidad();
           toast('Publicación borrada');
         }catch(e){ toast('No se pudo borrar: ' + e.message); }
+      });
+    });
+    document.querySelectorAll('[data-open-perfil]').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        abrirPerfilPublico(el.dataset.openPerfil, 'comunidad');
       });
     });
   }
@@ -2213,6 +2296,20 @@
           <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
         </button>
       </div>`).join('');
+
+    try{
+      const logs = await apiFetch('/users/auditoria');
+      const auditList = document.getElementById('adminAuditoriaList');
+      auditList.innerHTML = logs.length === 0
+        ? '<p class="empty-note">Sin acciones registradas todavía.</p>'
+        : logs.map(l=>`
+          <div style="padding:6px 0; border-bottom:1px solid var(--line-soft);">
+            <p style="font-size:12px; margin:0;">${esc(l.detalle || l.accion)}</p>
+            <p class="card-sub" style="font-size:10.5px;">por @${esc(l.adminUsername)} · ${tiempoRelativo(l.createdAt)}</p>
+          </div>`).join('');
+    }catch(e){
+      document.getElementById('adminAuditoriaList').innerHTML = '<p class="empty-note">No se pudo cargar la auditoría.</p>';
+    }
 
     document.querySelectorAll('[data-role-toggle]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{

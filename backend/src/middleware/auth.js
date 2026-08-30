@@ -12,11 +12,16 @@ async function requireAuth(req, res, next) {
     // el usuario cerró sesión o cambió su contraseña desde que se
     // firmó este token, tokenVersion ya no coincide y el token queda
     // invalidado de verdad, no solo "olvidado" del lado del cliente.
-    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { tokenVersion: true } });
+    //
+    // El rol también se toma fresco de la base en cada pedido, nunca
+    // del valor grabado dentro del token: si a alguien le sacan el rol
+    // de administrador, el cambio tiene que aplicarse en el siguiente
+    // pedido, no recién cuando ese token viejo expire por su cuenta.
+    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { tokenVersion: true, role: true } });
     if (!user || user.tokenVersion !== payload.tokenVersion) {
       return res.status(401).json({ error: 'Tu sesión ya no es válida — iniciá sesión de nuevo.' });
     }
-    req.user = payload;
+    req.user = { ...payload, role: user.role };
     next();
   } catch (e) {
     return res.status(401).json({ error: 'Token inválido o expirado.' });

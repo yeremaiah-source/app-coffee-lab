@@ -1133,19 +1133,31 @@
     <div class="view" id="view-perfil">
       <h1 class="greet">Perfil</h1>
       <div class="card" style="display:flex; align-items:center; gap:14px;">
-        <div class="avatar" style="width:52px; height:52px; font-size:16px; cursor:pointer; overflow:hidden; position:relative;" id="perfilAvatar" title="Tocá para cambiar tu foto">–</div>
+        <div class="avatar" style="width:60px; height:60px; font-size:18px; cursor:pointer; overflow:hidden; position:relative; flex-shrink:0;" id="perfilAvatar" title="Tocá para cambiar tu foto">–</div>
         <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
-        <div>
-          <p class="card-title" id="perfilNombre">Cargando...</p>
+        <div style="flex:1; min-width:0;">
+          <p class="card-title" id="perfilNombre" style="font-size:17px;">Cargando...</p>
           <p class="card-sub" id="perfilRol">—</p>
         </div>
-        <button class="primary-btn" id="logoutBtn" style="width:auto; margin-left:auto; padding:8px 14px; font-size:12px;">Salir</button>
+        <button class="primary-btn" id="logoutBtn" style="width:auto; padding:8px 14px; font-size:12px; flex-shrink:0;">Salir</button>
       </div>
       <p class="card-sub" id="avatarUploadStatus" style="text-align:center; margin:-10px 0 16px;"></p>
+
       <div class="card">
-        <p class="eyebrow">Tu actividad</p>
         <div class="stat-row" id="perfilStats"></div>
       </div>
+
+      <div class="card" id="perfilMejorCard" style="display:none;">
+        <p class="eyebrow">Mejor extracción</p>
+        <p style="font-family:'Bungee',sans-serif; font-size:28px; margin-top:6px;" id="perfilMejorEy"></p>
+        <p class="card-sub" id="perfilMejorDetalle"></p>
+      </div>
+
+      <div class="card" id="perfilCafesCard" style="display:none;">
+        <p class="eyebrow">Cafés trabajados</p>
+        <div id="perfilCafesList" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;"></div>
+      </div>
+
       <div class="card">
         <p class="eyebrow">Cambiar contraseña</p>
         <label>Contraseña actual</label>
@@ -3147,7 +3159,7 @@
     avatarEl.innerHTML = user.avatarUrl
       ? `<img src="${esc(user.avatarUrl)}" alt="Tu foto de perfil" style="width:100%; height:100%; object-fit:cover;">`
       : esc(initials);
-    document.getElementById('perfilNombre').textContent = user.username;
+    document.getElementById('perfilNombre').textContent = '@' + user.username;
     const roleLabels = { usuario:'Usuario registrado', barista:'Barista', administrador:'Administrador' };
     document.getElementById('perfilRol').textContent = roleLabels[user.role] || user.role;
     document.getElementById('adminEntryCard').style.display = user.role === 'administrador' ? 'block' : 'none';
@@ -3388,19 +3400,51 @@
   });
 
   // ---------- PERFIL ----------
-  function renderPerfil(){
-    // Las estadísticas del perfil ahora se piden a la API, con manejo de
-    // que el fetch pueda fallar si el backend no está corriendo.
-    apiFetch('/extractions').then(mias=>{
-      const stats = document.getElementById('perfilStats');
-      const total = mias.length;
-      const espressos = mias.filter(e=>e.metodo==='Espresso').length;
-      stats.innerHTML = `
-        <div class="stat"><div class="k">Extracciones</div><div class="v">${total}</div></div>
-        <div class="stat"><div class="k">Espressos</div><div class="v">${espressos}</div></div>`;
-    }).catch(()=>{
-      document.getElementById('perfilStats').innerHTML = `<p class="card-sub">No se pudo conectar con el servidor.</p>`;
-    });
+  async function renderPerfil(){
+    if(!sessionUser) return;
+    const stats = document.getElementById('perfilStats');
+    let mias = [], recetasPropias = [], cafesPropios = [];
+    try{
+      [mias, recetasPropias, cafesPropios] = await Promise.all([
+        apiFetch('/extractions'),
+        apiFetch('/recipes').then(rs => rs.filter(r => r.authorId === sessionUser.id)),
+        apiFetch('/coffees').then(cs => cs.filter(c => c.addedById === sessionUser.id)),
+      ]);
+    }catch(e){
+      stats.innerHTML = `<p class="card-sub">No se pudo conectar con el servidor.</p>`;
+      return;
+    }
+
+    stats.innerHTML = `
+      <div class="stat"><div class="k">Extracciones</div><div class="v">${mias.length}</div></div>
+      <div class="stat"><div class="k">Recetas</div><div class="v">${recetasPropias.length}</div></div>
+      <div class="stat"><div class="k">Cafés</div><div class="v">${cafesPropios.length}</div></div>`;
+
+    // Mejor extracción: la más cercana al 20% de EY (centro del rango
+    // Golden Cup) — mismo criterio que usa Insights, para ser
+    // consistentes en toda la app.
+    const conEY = mias.filter(e => e.ey !== null && e.ey !== undefined);
+    const mejorCard = document.getElementById('perfilMejorCard');
+    if(conEY.length > 0){
+      const mejor = [...conEY].sort((a,b)=> Math.abs(a.ey-20) - Math.abs(b.ey-20))[0];
+      mejorCard.style.display = 'block';
+      document.getElementById('perfilMejorEy').textContent = mejor.ey.toFixed(1) + '% EY';
+      document.getElementById('perfilMejorDetalle').textContent = `${mejor.metodo} · ${mejor.ratio}${mejor.categoria ? ' · '+mejor.categoria : ''}`;
+    } else {
+      mejorCard.style.display = 'none';
+    }
+
+    // Cafés trabajados: nombres únicos que aparecen en tus extracciones.
+    const cafesCard = document.getElementById('perfilCafesCard');
+    const nombresCafes = [...new Set(mias.map(e=>e.cafe).filter(Boolean).map(c=>c.trim()))];
+    if(nombresCafes.length > 0){
+      cafesCard.style.display = 'block';
+      document.getElementById('perfilCafesList').innerHTML = nombresCafes.map(nombre=>
+        `<span class="tag" style="margin:0;">${esc(nombre)}</span>`
+      ).join('');
+    } else {
+      cafesCard.style.display = 'none';
+    }
   }
 
   // ---------- Init ----------

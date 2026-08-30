@@ -421,6 +421,27 @@ Basado en la imagen de referencia que pasaste (radar + barras de rango).
   todos los usuarios y la zona de riesgo, que antes quedaban sueltas
   al final.
 
+## Perfil como identidad
+
+- ✅ **Perfil rediseñado**: dejó de ser una pantalla de "—" y ajustes
+  sueltos para convertirse en una identidad real, con datos genuinos
+  (nada inventado):
+  - `@usuario` y tu rol, arriba de todo.
+  - Tres contadores reales: extracciones, recetas propias (filtradas
+    por `authorId === vos`), y fichas de café que agregaste
+    (filtradas por `addedById === vos`) — antes solo mostraba
+    "Extracciones" y "Espressos".
+  - **Mejor extracción**: la más cercana al 20% de EY (centro del
+    rango Golden Cup) — mismo criterio que ya usa Insights para
+    "mejor", no simplemente el EY más alto (un EY muy alto está
+    sobreextraído, no es mejor).
+  - **Cafés trabajados**: chips con los nombres únicos de café que
+    aparecen en tu historial de extracciones.
+  - Ambas secciones nuevas se ocultan solas si todavía no hay datos
+    suficientes (por ejemplo, cero extracciones con TDS cargado).
+- 100% frontend — los tres endpoints ya devolvían todo lo necesario
+  (`authorId`/`addedById`), no hizo falta tocar el backend.
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

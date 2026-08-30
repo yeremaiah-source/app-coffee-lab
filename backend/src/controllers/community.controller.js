@@ -23,6 +23,10 @@ async function publicar(req, res, next) {
     if (!extraction || extraction.userId !== req.user.sub) {
       return res.status(404).json({ error: 'Extracción no encontrada o no te pertenece.' });
     }
+    const yaPublicada = await prisma.communityPost.findUnique({ where: { extractionId } });
+    if (yaPublicada) {
+      return res.status(409).json({ error: 'Esa extracción ya está publicada en la comunidad. Registrá una nueva para volver a publicar.' });
+    }
     const post = await prisma.communityPost.create({
       data: { extractionId, userId: req.user.sub, descripcion, fotoUrl: fotoUrl || null },
     });

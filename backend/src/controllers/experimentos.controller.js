@@ -10,6 +10,20 @@ async function listar(req, res, next) {
   } catch (e) { next(e); }
 }
 
+// GET /api/experimentos/:id — el patrón siempre es el mismo:
+// ¿existe? ¿es tuyo? recién ahí se devuelve. Nunca "¿el frontend
+// decide mostrarlo?" — la decisión vive acá, en el servidor.
+async function obtenerUno(req, res, next) {
+  try {
+    const experimento = await prisma.experimento.findUnique({ where: { id: req.params.id } });
+    if (!experimento) return res.status(404).json({ error: 'Experimento no encontrado.' });
+    if (experimento.userId !== req.user.sub) {
+      return res.status(403).json({ error: 'Este no es tu experimento.' });
+    }
+    res.json(experimento);
+  } catch (e) { next(e); }
+}
+
 async function crear(req, res, next) {
   try {
     const { hipotesis, variableModificada, variablesConstantes, resultadoEsperado } = req.body;
@@ -70,4 +84,4 @@ async function eliminar(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, crear, actualizar, eliminar };
+module.exports = { listar, obtenerUno, crear, actualizar, eliminar };

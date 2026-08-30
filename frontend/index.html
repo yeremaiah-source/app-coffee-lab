@@ -1961,11 +1961,9 @@
     detalleExperimentoId = id;
     showView('detalle-experimento');
     document.getElementById('detExpError').textContent = '';
-    let experimentos = [];
-    try{ experimentos = await apiFetch('/experimentos'); }
+    let exp;
+    try{ exp = await apiFetch(`/experimentos/${id}`); }
     catch(e){ toast('No se pudo cargar: ' + e.message); return; }
-    const exp = experimentos.find(x=>x.id===id);
-    if(!exp) return;
     document.getElementById('detExpHipotesis').textContent = exp.hipotesis;
     document.getElementById('detExpVariable').textContent = exp.variableModificada;
     document.getElementById('detExpConstantes').textContent = exp.variablesConstantes || '—';

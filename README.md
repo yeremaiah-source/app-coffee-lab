@@ -202,3 +202,55 @@ lo que ya funcionaba, sin tocar datos existentes.
 - Auto-deploy de Render inestable — se viene forzando manualmente.
 - Actualización de dependencias: no se hizo una revisión de
   vulnerabilidades conocidas (`npm audit`) en esta ronda.
+
+## Mejoras estéticas (rueda de aromas y fotos de recetas)
+
+- ✅ **Rueda de aromas rediseñada**: los degradados radiales le dan
+  volumen a cada segmento (antes eran colores planos), y las etiquetas
+  ahora siguen la curva del arco (`<textPath>` real sobre un path SVG),
+  como una rueda de sabores profesional — antes el texto se cortaba en
+  categorías con nombres largos ("Verde / Vegetal", "Agrio /
+  Fermentado"). El color del texto se calcula automáticamente según el
+  contraste de cada color de fondo. El segmento activo tiene un brillo
+  sutil. De paso corregí una fuente del centro de la rueda que había
+  quedado rota (referenciaba "Space Grotesk", una tipografía que ya no
+  cargábamos desde el rediseño skater).
+- ✅ **Tarjetas de receta rediseñadas**: la foto pasa a ser protagonista
+  — ocupa todo el ancho arriba de la tarjeta (antes era un cuadradito
+  chico de 64px al lado del texto), con un degradado oscuro abajo
+  donde flota la etiqueta del método, y los botones de editar/duplicar
+  ahora son íconos flotando sobre la foto en vez de ocupar espacio
+  aparte.
+- ✅ **Ilustraciones en vez de fotos de stock**: las 7 recetas base ya
+  no usan fotos de Unsplash — tienen ilustraciones lineales minimalistas
+  en SVG, dibujadas a mano en código (una taza para cada variante de
+  espresso con distinto nivel de llenado, el cono del V60 con su
+  espiral de vertido, la prensa francesa, el frasco de cold brew con
+  hielo). No dependen de internet para cargar, y usan los mismos
+  colores holográficos del resto de la app (magenta para espresso,
+  cian para filtro, verde lima para cold brew).
+- ✅ **Descripciones técnicas actualizadas con fuentes actuales**: cada
+  una de las 7 recetas base se reescribió después de chequear
+  estándares vigentes de la SCA y tendencias de competencias recientes
+  (no de memoria) — el Golden Cup Standard oficial (55g/L ±10%, TDS
+  1.15–1.35%, extracción 18–22%, calidad de agua incluida), la
+  tendencia de shots cada vez más cortos en el Mundial de Baristas
+  2025, la receta de V60 de James Hoffmann (la más referenciada hoy) y
+  la variante de molienda extra gruesa que Tetsu Kasuya presentó en
+  2026, y los rangos de ratio que la SCA recomienda para prensa
+  francesa y cold brew (concentrado vs. listo para tomar).
+- ✅ **Directorio de usuarios**: nueva pestaña "Usuarios" dentro de
+  Comunidad (al lado de "Feed") que lista a todos los usuarios
+  registrados, con su foto, cuántas recetas publicó y cuántas
+  extracciones compartió cada uno — tocando a cualquiera se abre su
+  perfil público. Vía `GET /api/users/directorio` (público, no expone
+  email ni rol).
+  una de las 7 recetas base se reescribió después de chequear
+  estándares vigentes de la SCA y tendencias de competencias recientes
+  (no de memoria) — el Golden Cup Standard oficial (55g/L ±10%, TDS
+  1.15–1.35%, extracción 18–22%, calidad de agua incluida), la
+  tendencia de shots cada vez más cortos en el Mundial de Baristas
+  2025, la receta de V60 de James Hoffmann (la más referenciada hoy) y
+  la variante de molienda extra gruesa que Tetsu Kasuya presentó en
+  2026, y los rangos de ratio que la SCA recomienda para prensa
+  francesa y cold brew (concentrado vs. listo para tomar).

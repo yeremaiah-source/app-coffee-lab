@@ -120,4 +120,28 @@ async function perfilPublico(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, cambiarRol, eliminar, actividad, perfilPublico, auditoria };
+// Directorio público: para la solapa "Usuarios" de la comunidad. No
+// expone email ni rol, solo lo que ya es público (nombre, foto,
+// cuántas recetas y extracciones compartió cada quien).
+async function directorio(req, res, next) {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        username: true,
+        avatarUrl: true,
+        createdAt: true,
+        _count: { select: { recipes: true, communityPosts: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json(users.map(u => ({
+      username: u.username,
+      avatarUrl: u.avatarUrl,
+      miembroDesde: u.createdAt,
+      recetas: u._count.recipes,
+      posts: u._count.communityPosts,
+    })));
+  } catch (e) { next(e); }
+}
+
+module.exports = { listar, cambiarRol, eliminar, actividad, perfilPublico, auditoria, directorio };

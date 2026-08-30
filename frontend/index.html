@@ -290,13 +290,43 @@
     margin-top:4px;
   }
 
-  .recipe-card{display:flex; gap:14px; align-items:flex-start;}
-  .recipe-card .swatch{
-    width:64px; height:64px; border-radius:14px; flex-shrink:0;
-    background:var(--panel-2); display:flex; align-items:center; justify-content:center;
-    color:var(--purple-2); overflow:hidden; border:1px solid var(--line-soft);
+  .recipe-card{padding-top:0; overflow:hidden;}
+  .recipe-card .rc-hero{
+    margin:0 -20px 14px -20px;
+    height:158px;
+    position:relative;
+    overflow:hidden;
+    background:var(--panel-2);
   }
-  .recipe-card .swatch img{width:100%; height:100%; object-fit:cover; display:block;}
+  .recipe-card .rc-hero img{
+    width:100%; height:100%; object-fit:cover; display:block;
+    transition:transform .35s ease;
+  }
+  .recipe-card:active .rc-hero img{transform:scale(1.05);}
+  .recipe-card .rc-hero-fallback{
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, var(--panel-2), var(--panel) 70%);
+    color:var(--text-faint);
+  }
+  .recipe-card .rc-hero-fallback .icon svg{width:34px; height:34px; stroke-width:1;}
+  .recipe-card .rc-hero-overlay{
+    position:absolute; inset:0;
+    background:linear-gradient(190deg, rgba(10,10,12,0) 45%, rgba(10,10,12,.82) 100%);
+    display:flex; align-items:flex-end; padding:12px;
+  }
+  .recipe-card .rc-hero-overlay .tag{margin-bottom:0;}
+  .recipe-card .rc-hero-actions{
+    position:absolute; top:10px; right:10px; z-index:2;
+    display:flex; gap:6px;
+  }
+  .recipe-card .rc-hero-actions .icon-btn{
+    width:30px; height:30px;
+    background:rgba(10,10,12,.55);
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.18);
+  }
+  .recipe-card .rc-hero-actions .icon svg{width:15px; height:15px;}
+  .recipe-card .rc-body{padding:0 0 2px;}
   .recipe-card .rc-title{font-weight:600; font-size:14px; margin:0;}
   .recipe-card .rc-meta{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-dim); margin:4px 0 6px;}
   .recipe-card .rc-desc{font-size:12.5px; color:var(--text-dim); margin:0; line-height:1.5;}
@@ -348,10 +378,10 @@
     cursor:pointer;
   }
   .aroma-chip.active{background:var(--purple); border-color:var(--purple); color:#fff; font-weight:500;}
-  .aroma-slice{cursor:pointer; stroke:var(--bg); stroke-width:2; transition:opacity .15s;}
-  .aroma-slice:hover{opacity:.85;}
-  .aroma-slice.active{opacity:1; stroke:#fff; stroke-width:2.5;}
-  .aroma-label{font-family:'Archivo', sans-serif; font-size:9.5px; font-weight:600; fill:#0B0912; pointer-events:none; text-anchor:middle;}
+  .aroma-slice{cursor:pointer; stroke:var(--bg); stroke-width:2; transition:opacity .15s, filter .15s;}
+  .aroma-slice:hover{opacity:.9;}
+  .aroma-slice.active{opacity:1; stroke:#fff; stroke-width:2.5; filter:drop-shadow(0 0 6px rgba(255,255,255,.35));}
+  .aroma-label{font-family:'Archivo', sans-serif; font-size:9.5px; font-weight:700; pointer-events:none;}
 
   .paper-list{display:flex; flex-direction:column; gap:12px;}
   .paper-card{
@@ -878,8 +908,17 @@
     <div class="view" id="view-comunidad">
       <h1 class="greet">Comunidad</h1>
       <p class="hint">Extracciones publicadas por otros usuarios — probalas, compará resultados y comentá.</p>
-      <button class="primary-btn" id="publicarExtraccionBtn" data-nav="publicar-extraccion" style="margin-bottom:16px;">Publicar mi última extracción</button>
-      <div id="comunidadList"></div>
+      <div class="tabs-pill" id="comunidadTabs">
+        <div class="tab active" data-comtab="feed">Feed</div>
+        <div class="tab" data-comtab="usuarios">Usuarios</div>
+      </div>
+      <div id="comunidadFeedPanel">
+        <button class="primary-btn" id="publicarExtraccionBtn" data-nav="publicar-extraccion" style="margin-bottom:16px;">Publicar mi última extracción</button>
+        <div id="comunidadList"></div>
+      </div>
+      <div id="comunidadUsuariosPanel" style="display:none;">
+        <div id="comunidadUsuariosList"></div>
+      </div>
     </div>
 
     <!-- PUBLICAR EN COMUNIDAD -->
@@ -1371,14 +1410,24 @@
   }
 
   // ---------- RECETAS ----------
+  function heroSvg(accent, iconPaths){
+    return `<svg viewBox="0 0 400 200" style="width:100%; height:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="200" fill="var(--panel-2)"/>
+      <circle cx="200" cy="98" r="85" fill="${accent}" opacity=".1"/>
+      <g stroke="${accent}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">${iconPaths}</g>
+    </svg>`;
+  }
+  const ACCENT_ESPRESSO = 'var(--holo-1)', ACCENT_FILTRO = 'var(--holo-2)', ACCENT_COLDBREW = 'var(--holo-3)';
+  const CUP_BASE = `<path d="M165 75 L235 75 L230 122 Q230 142 200 142 Q170 142 170 122 Z"/><path d="M235 87 q22 0 22 18 q0 18 -22 18"/><path d="M150 152 h100"/>`;
+
   const builtInRecetas = [
-    {tipo:'Espresso', nombre:'Ristretto', ratio:'1:1–1:1.5', meta:'15–20 s · 92–96°C', desc:'Más cuerpo y dulzor, menos amargor. Ideal para blends de tueste medio-oscuro.', img:'https://images.unsplash.com/photo-1583165278997-0250ea5d72e2?w=400&q=80&fm=jpg&fit=crop'},
-    {tipo:'Espresso', nombre:'Normale', ratio:'1:2', meta:'25–30 s · 92–96°C', desc:'El estándar de barra tradicional. Punto de partida para calibrar cualquier café.', img:'https://images.unsplash.com/photo-1610889556528-9a770e32642f?w=400&q=80&fm=jpg&fit=crop'},
-    {tipo:'Espresso', nombre:'Lungo', ratio:'1:3', meta:'30–40 s · 92–96°C', desc:'Más volumen en taza, mayor riesgo de amargor si se pasa de tiempo.', img:'https://images.unsplash.com/photo-1558416165-5fb04b79b0e7?w=400&q=80&fm=jpg&fit=crop'},
-    {tipo:'Filtro', nombre:'Goteo por lotes (Golden Cup, SCA)', ratio:'1:18 (55g/L ±10%)', meta:'4–8 min · 90.5–96.1°C', desc:'Estándar oficial de la SCA: TDS 1.15–1.35%, extracción 18–22%.', img:'https://images.unsplash.com/photo-1522825397800-ddf6405fc258?w=400&q=80&fm=jpg&fit=crop'},
-    {tipo:'Filtro', nombre:'Pour-over (V60)', ratio:'1:15–1:17', meta:'2:30–3:30 · 92–96°C', desc:'Guía habitual de especialidad. Ajustá el ratio según cuerpo y dulzor buscado.', img:'https://images.unsplash.com/photo-1522675397120-8cb88c83ac16?w=400&q=80&fm=jpg&fit=crop'},
-    {tipo:'Filtro', nombre:'Prensa francesa', ratio:'1:15–1:17', meta:'4:00 · 92–96°C', desc:'Inmersión total. El tiempo no depende de la dosis.', img:'https://images.unsplash.com/photo-1708127368781-cd5f069a90a5?w=400&q=80&fm=jpg&fit=crop'},
-    {tipo:'Cold Brew', nombre:'Cold Brew clásico', ratio:'1:8', meta:'12–24 h · agua fría o heladera', desc:'Molienda gruesa, infusión larga en frío. Diluí el concentrado al servir si usaste ratios más cargados.', img:'https://images.unsplash.com/photo-1759259639356-6eee63241869?w=400&q=80&fm=jpg&fit=crop'}
+    {tipo:'Espresso', nombre:'Ristretto', ratio:'1:1–1:1.5', meta:'15–20 s · 92–96°C', desc:'Ratio 1:1 a 1:1.5 (mismo peso de líquido que de café, o menos). Requiere molienda más fina que el normale para sostener 18–24s de caída. En el Mundial de Baristas 2025 la tendencia fue ir todavía más corto —hasta 1:1— para que espressos delicados se noten bajo la leche.', ilustracion: heroSvg(ACCENT_ESPRESSO, CUP_BASE + `<path d="M180 130 h40"/>`)},
+    {tipo:'Espresso', nombre:'Normale', ratio:'1:2', meta:'25–30 s · 92–96°C', desc:'Ratio 1:2 (18g de dosis / 36g de salida), 25–30s, agua a 90.5–96°C. El punto de partida oficial de la especialidad: se calibra siempre acá primero, antes de mover hacia ristretto o lungo.', ilustracion: heroSvg(ACCENT_ESPRESSO, CUP_BASE + `<path d="M175 108 h50"/>`)},
+    {tipo:'Espresso', nombre:'Lungo', ratio:'1:3', meta:'30–40 s · 92–96°C', desc:'Ratio 1:3 a 1:4. Se usa sobre todo con tuestes claros para ganar claridad y notas frutales/florales a costa de cuerpo. Necesita molienda más gruesa que el normale para no sobreextraer con el mayor volumen de agua.', ilustracion: heroSvg(ACCENT_ESPRESSO, CUP_BASE + `<path d="M172 90 h56"/>`)},
+    {tipo:'Filtro', nombre:'Goteo por lotes (Golden Cup, SCA)', ratio:'1:18 (55g/L ±10%)', meta:'4–8 min · 90.5–96.1°C', desc:'Estándar oficial de la SCA: TDS 1.15–1.35%, extracción 18–22%. También exige agua con 50–175 ppm de dureza cálcica y pH cercano a 7 — sin esa calidad de agua, ni el mejor filtro llega al rango objetivo.', ilustracion: heroSvg(ACCENT_FILTRO, `<path d="M160 62 H240 L228 90 H172 Z"/><path d="M197 90 v12"/><path d="M207 90 v16"/><path d="M172 106 H228 V150 Q228 156 222 156 H178 Q172 156 172 150 Z"/><path d="M228 116 q16 5 16 20 q0 15 -16 18"/>`)},
+    {tipo:'Filtro', nombre:'Pour-over (V60)', ratio:'1:15–1:17', meta:'2:30–3:30 · 92–96°C', desc:'La receta más referenciada hoy es la de James Hoffmann: 30g/500g (1:16.6), bloom de 45s con el doble de agua que de café, vertido continuo hasta 3:30. Tetsu Kasuya (campeón mundial de Brewers Cup) presentó en 2026 una variante con molienda extra gruesa y diez vertidos de 30g cada 15 segundos.', ilustracion: heroSvg(ACCENT_FILTRO, `<path d="M155 45 q22 -16 45 0 q22 16 45 0" opacity=".65"/><path d="M175 68 L225 68 L204 118 H196 Z"/><path d="M186 76 L191 108"/><path d="M214 76 L209 108"/><path d="M182 124 H218 V144 Q218 154 200 154 Q182 154 182 144 Z"/>`)},
+    {tipo:'Filtro', nombre:'Prensa francesa', ratio:'1:15–1:17', meta:'4:00 · 92–96°C', desc:'La SCA recomienda 1:12 a 1:15 para prensa francesa (más concentrado que el goteo). Molienda gruesa, 4 minutos de infusión total antes de prensar. A diferencia del filtro, el tiempo de contacto no depende de la dosis: todo el café toca toda el agua desde el primer segundo.', ilustracion: heroSvg(ACCENT_FILTRO, `<path d="M172 72 H228 V140 Q228 150 218 150 H182 Q172 150 172 140 Z"/><path d="M200 44 V72"/><circle cx="200" cy="38" r="9"/><path d="M228 92 q22 0 22 17 q0 17 -22 17"/><path d="M172 82 L160 76"/>`)},
+    {tipo:'Cold Brew', nombre:'Cold Brew clásico', ratio:'1:8', meta:'12–24 h · agua fría o heladera', desc:'Versión lista para tomar: ratio 1:8, 12–24h en frío. Para concentrado —diluible después con agua, leche o hielo— se usa 1:4 a 1:5 con el mismo tiempo de infusión. Molienda siempre gruesa: una fina genera turbidez y amargor por el contacto tan extendido.', ilustracion: heroSvg(ACCENT_COLDBREW, `<path d="M172 68 H228 V72 H172 Z"/><path d="M178 72 H222 V128 Q222 140 210 140 H190 Q178 140 178 128 Z"/><rect x="187" y="92" width="16" height="16" rx="3"/><rect x="203" y="106" width="13" height="13" rx="3"/><path d="M222 60 L234 34"/>`)}
   ];
   let recActiveType = 'Todas';
   let recSearch = '';
@@ -1416,21 +1465,23 @@
       const isOwner = r.id && sessionUser && r.authorId === sessionUser.id;
       return `
       <div class="card recipe-card">
-        <div class="swatch">${r.img ? `<img src="${esc(r.img)}" alt="${esc(r.nombre)}" loading="lazy">` : `<span class="icon"><svg viewBox="0 0 24 24"><path d="M3 8h13v6a5 5 0 01-5 5H8a5 5 0 01-5-5V8z"/><path d="M16 8h2a3 3 0 010 6h-2"/></svg></span>`}</div>
-        <div style="flex:1;">
-          <span class="tag">${esc(r.tipo)}</span>
+        <div class="rc-hero">
+          ${r.ilustracion || (r.img ? `<img src="${esc(r.img)}" alt="${esc(r.nombre)}" loading="lazy">` : `<div class="rc-hero-fallback"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 8h13v6a5 5 0 01-5 5H8a5 5 0 01-5-5V8z"/><path d="M16 8h2a3 3 0 010 6h-2"/></svg></span></div>`)}
+          <div class="rc-hero-overlay"><span class="tag">${esc(r.tipo)}</span></div>
+          ${(isOwner || r.id) ? `<div class="rc-hero-actions">
+            ${isOwner ? `<button class="icon-btn" data-edit-recipe="${r.id}" title="Editar">
+              <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span>
+            </button>` : ''}
+            ${r.id ? `<button class="icon-btn" data-duplicate-recipe="${r.id}" title="Duplicar y modificar">
+              <span class="icon"><svg viewBox="0 0 24 24"><path d="M8 8h11v11H8z"/><path d="M5 16H4V4h12v1"/></svg></span>
+            </button>` : ''}
+          </div>` : ''}
+        </div>
+        <div class="rc-body">
           <p class="rc-title">${esc(r.nombre)}</p>
           <p class="rc-meta">${esc(r.ratio)}${r.meta ? ' · '+esc(r.meta) : ''}</p>
           <p class="rc-desc">${esc(r.desc)}</p>
           ${r.autor ? `<p class="card-sub" style="margin-top:4px; cursor:pointer;" data-open-perfil="${esc(r.autor)}">por ${esc(r.autor)}${r.raw && r.raw.version > 1 ? ' · v'+esc(r.raw.version) : ''}</p>` : ''}
-        </div>
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          ${isOwner ? `<button class="icon-btn" data-edit-recipe="${r.id}" title="Editar">
-            <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span>
-          </button>` : ''}
-          ${r.id ? `<button class="icon-btn" data-duplicate-recipe="${r.id}" title="Duplicar y modificar">
-            <span class="icon"><svg viewBox="0 0 24 24"><path d="M8 8h11v11H8z"/><path d="M5 16H4V4h12v1"/></svg></span>
-          </button>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -1623,7 +1674,7 @@
       { name:'Caramelo / Melaza', desc:'Producto directo de la caramelización de azúcares durante el tueste. Aumenta con tuestes medios a medio-oscuros y con procesos honey, que dejan más azúcar en el mucílago.' },
       { name:'Azúcar morena', desc:'Dulzor profundo asociado a un buen desarrollo post-crack; suele acompañar cuerpos altos en cafés de Brasil y Centroamérica.' }
     ]},
-    { id:'nuez_cacao', name:'Nuez / Cacao', color:'#A9744F', notes:[
+    { id:'nuez_cacao', name:'Nuez / Cacao', short:'Nuez/Cacao', color:'#A9744F', notes:[
       { name:'Nuez / Almendra', desc:'Ligada a pirazinas formadas en la reacción de Maillard durante el tueste. Muy común en cafés de Brasil y Centroamérica con tueste medio.' },
       { name:'Cacao / Chocolate', desc:'Asociada a compuestos fenólicos y a la degradación de azúcares en tuestes medio-oscuros; se intensifica cuanto mayor es el desarrollo posterior al segundo crack.' }
     ]},
@@ -1636,17 +1687,17 @@
       { name:'Ahumado', desc:'Se genera cuando los aceites del grano llegan a la superficie y se degradan por el calor prolongado, algo propio de tuestes oscuros.' },
       { name:'Tabaco', desc:'Nota seca asociada a tuestes oscuros y también a granos verdes con tiempo de añejamiento (aging) prolongado antes de tostarse.' }
     ]},
-    { id:'vegetal', name:'Verde / Vegetal', color:'#5B8C5A', notes:[
+    { id:'vegetal', name:'Verde / Vegetal', short:'Vegetal', color:'#5B8C5A', notes:[
       { name:'Vegetal fresco / Hoja', desc:'Señala compuestos como el hexanal, propios de un grano subdesarrollado en el tueste o de un secado defectuoso después de la cosecha.' },
       { name:'Legumbre cruda', desc:'Asociada a un tueste muy claro o a un secado insuficiente del café en pergamino; recuerda a vegetales o legumbres sin cocinar.' },
       { name:'Terroso / Musgo', desc:'Frecuente en procesos naturales con secado mal controlado o exceso de humedad; si es muy intensa puede señalar contaminación por moho.' }
     ]},
-    { id:'fermentado', name:'Agrio / Fermentado', color:'#8FA23B', notes:[
+    { id:'fermentado', name:'Agrio / Fermentado', short:'Fermentado', color:'#8FA23B', notes:[
       { name:'Ácido acético / Vinagre', desc:'Producida por bacterias acéticas durante una fermentación prolongada o mal controlada del mucílago en el proceso húmedo.' },
       { name:'Ácido butírico', desc:'Recuerda a manteca rancia. Señala una fermentación anaeróbica excesiva o defectuosa del grano.' },
       { name:'Alcohólico / Vinoso', desc:'Común en procesos naturales u honey con fermentación extendida; en dosis altas se considera un defecto de proceso, en dosis bajas aporta complejidad.' }
     ]},
-    { id:'otros', name:'Otros / Defectos', color:'#7A7A85', notes:[
+    { id:'otros', name:'Otros / Defectos', short:'Otros', color:'#7A7A85', notes:[
       { name:'Papel / Cartón', desc:'Asociada a café verde envejecido o mal almacenado, producto de la oxidación de lípidos del grano con el paso del tiempo.' },
       { name:'Químico / Medicinal', desc:'Suele indicar un defecto de secado o algún tipo de contaminación durante el procesamiento húmedo del café.' },
       { name:'Rancio / Aceite viejo', desc:'Causada por la oxidación de los aceites del café después del tueste; aumenta con el tiempo de reposo y una mala conservación del grano molido.' }
@@ -1667,24 +1718,52 @@
     return `M ${p1.x} ${p1.y} A ${rOuter} ${rOuter} 0 ${largeArc} 0 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${rInner} ${rInner} 0 ${largeArc} 1 ${p4.x} ${p4.y} Z`;
   }
 
+  function luminancia(hex){
+    const c = hex.replace('#','');
+    const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+    return (0.299*r + 0.587*g + 0.114*b) / 255;
+  }
+  function arcTextPath(cx, cy, r, startAngle, endAngle, flip){
+    if(!flip){
+      const p1 = polarPoint(cx, cy, r, startAngle), p2 = polarPoint(cx, cy, r, endAngle);
+      return `M ${p1.x} ${p1.y} A ${r} ${r} 0 0 1 ${p2.x} ${p2.y}`;
+    }
+    const p1 = polarPoint(cx, cy, r, endAngle), p2 = polarPoint(cx, cy, r, startAngle);
+    return `M ${p1.x} ${p1.y} A ${r} ${r} 0 0 0 ${p2.x} ${p2.y}`;
+  }
+
   function renderAromaWheel(){
     const svg = document.getElementById('aromaWheel');
     const cx = 150, cy = 150, rOuter = 138, rInner = 54;
+    const rText = (rOuter + rInner) / 2;
     const step = 360 / aromaWheelData.length;
+    let defs = '<defs>';
     let html = '';
     aromaWheelData.forEach((cat, i)=>{
       const start = i * step, end = start + step;
       const mid = start + step/2;
       const path = donutSlicePath(cx, cy, rOuter, rInner, start, end);
-      const labelPt = polarPoint(cx, cy, (rOuter+rInner)/2, mid);
       const activeClass = cat.id === aromaActiveCat ? ' active' : '';
-      html += `<path class="aroma-slice${activeClass}" d="${path}" fill="${cat.color}" data-cat="${cat.id}"/>`;
-      html += `<text class="aroma-label" x="${labelPt.x}" y="${labelPt.y}" transform="rotate(0 ${labelPt.x} ${labelPt.y})">${cat.name}</text>`;
+      const gradId = `aroma-grad-${cat.id}`;
+      defs += `<radialGradient id="${gradId}" cx="50%" cy="50%" r="75%">
+        <stop offset="0%" stop-color="${cat.color}" stop-opacity=".72"/>
+        <stop offset="100%" stop-color="${cat.color}"/>
+      </radialGradient>`;
+      html += `<path class="aroma-slice${activeClass}" d="${path}" fill="url(#${gradId})" data-cat="${cat.id}"/>`;
+
+      const flip = mid > 90 && mid < 270;
+      const pad = 3;
+      const arcId = `aroma-arc-${cat.id}`;
+      defs += `<path id="${arcId}" d="${arcTextPath(cx, cy, rText, start+pad, end-pad, flip)}" fill="none"/>`;
+      const textColor = luminancia(cat.color) > 0.6 ? '#0A0A0C' : '#F4F5F7';
+      html += `<text class="aroma-label" style="fill:${textColor};"><textPath href="#${arcId}" xlink:href="#${arcId}" startOffset="50%" text-anchor="middle">${esc(cat.short || cat.name)}</textPath></text>`;
     });
+    defs += '</defs>';
     html += `<circle cx="${cx}" cy="${cy}" r="${rInner-4}" fill="var(--panel)"/>`;
-    html += `<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--purple-2)" font-family="Space Grotesk">RUEDA</text>`;
-    html += `<text x="${cx}" y="${cy+12}" text-anchor="middle" font-size="9" fill="var(--text-dim)" font-family="IBM Plex Mono">DE AROMAS</text>`;
-    svg.innerHTML = html;
+    html += `<circle cx="${cx}" cy="${cy}" r="${rInner-4}" fill="none" stroke="var(--line)" stroke-width="1"/>`;
+    html += `<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--purple-2)" font-family="Bungee" letter-spacing="1">RUEDA</text>`;
+    html += `<text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="8.5" fill="var(--text-dim)" font-family="IBM Plex Mono" letter-spacing="2">DE AROMAS</text>`;
+    svg.innerHTML = defs + html;
     svg.querySelectorAll('.aroma-slice').forEach(el=>{
       el.addEventListener('click', ()=> selectAromaCategory(el.dataset.cat));
     });
@@ -1860,6 +1939,40 @@
     </div>`).join('');
 
   // ---------- COMUNIDAD (feed real) ----------
+  document.querySelectorAll('#comunidadTabs .tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('#comunidadTabs .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.comtab;
+      document.getElementById('comunidadFeedPanel').style.display = which==='feed' ? 'block' : 'none';
+      document.getElementById('comunidadUsuariosPanel').style.display = which==='usuarios' ? 'block' : 'none';
+      if(which==='usuarios') renderComunidadUsuarios();
+    });
+  });
+
+  async function renderComunidadUsuarios(){
+    const list = document.getElementById('comunidadUsuariosList');
+    list.innerHTML = '<p class="empty-note">Cargando...</p>';
+    let users = [];
+    try{ users = await apiFetch('/users/directorio'); }
+    catch(e){ list.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
+    if(users.length === 0){
+      list.innerHTML = '<p class="empty-note">Todavía no hay usuarios registrados.</p>';
+      return;
+    }
+    list.innerHTML = users.map(u=>`
+      <div class="card" style="display:flex; align-items:center; gap:12px; cursor:pointer;" data-open-perfil="${esc(u.username)}">
+        ${u.avatarUrl ? `<div class="avatar" style="width:44px; height:44px; overflow:hidden;"><img src="${esc(u.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar" style="width:44px; height:44px;">${esc(u.username.slice(0,2).toUpperCase())}</div>`}
+        <div style="flex:1;">
+          <p class="card-title" style="font-size:14px;">@${esc(u.username)}</p>
+          <p class="card-sub">${u.recetas} receta${u.recetas===1?'':'s'} · ${u.posts} extracción${u.posts===1?'':'es'} compartida${u.posts===1?'':'s'}</p>
+        </div>
+      </div>`).join('');
+    document.querySelectorAll('#comunidadUsuariosList [data-open-perfil]').forEach(el=>{
+      el.addEventListener('click', ()=> abrirPerfilPublico(el.dataset.openPerfil, 'comunidad'));
+    });
+  }
+
   async function renderComunidad(){
     const list = document.getElementById('comunidadList');
     let posts = [];

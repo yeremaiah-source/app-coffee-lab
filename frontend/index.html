@@ -2870,6 +2870,19 @@
     });
   }
 
+  // Deriva 2-3 descriptores cortos de sabor a partir de los sliders
+  // sensoriales que la persona cargó al registrar la extracción —
+  // nunca inventa nada, solo traduce números reales a palabras si
+  // fueron notablemente altos (7 o más de 10).
+  function descriptoresSensoriales(ext){
+    const tags = [];
+    if(ext.dulzor != null && ext.dulzor >= 7) tags.push('Dulce');
+    if(ext.acidez != null && ext.acidez >= 7) tags.push('Ácido / Frutal');
+    if(ext.cuerpo != null && ext.cuerpo >= 7) tags.push('Con cuerpo');
+    if(ext.amargor != null && ext.amargor >= 7) tags.push('Amargor marcado');
+    return tags;
+  }
+
   async function renderComunidad(){
     const list = document.getElementById('comunidadList');
     let posts = [];
@@ -2882,19 +2895,31 @@
     }
     list.innerHTML = posts.map(p=>{
       const puedeBorrarPost = sessionUser && (sessionUser.id === p.userId || sessionUser.role === 'administrador');
+      const ext = p.extraction;
+      const sabores = descriptoresSensoriales(ext);
       return `
       <div class="card post-card">
         <div class="p-head">
           ${p.user.avatarUrl ? `<div class="avatar" style="overflow:hidden;"><img src="${esc(p.user.avatarUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="avatar">${esc(p.user.username.slice(0,2).toUpperCase())}</div>`}
           <div style="flex:1;">
             <p class="p-name" data-open-perfil="${esc(p.user.username)}" style="cursor:pointer;">@${esc(p.user.username)}</p>
-            <p class="p-meta">${esc(p.extraction.metodo)} · ${esc(p.extraction.ratio)} ${p.extraction.categoria ? '· '+esc(p.extraction.categoria) : ''}</p>
+            ${ext.cafe ? `<p class="p-meta" style="font-weight:600; color:var(--text);">${esc(ext.cafe)}</p>` : ''}
           </div>
           ${puedeBorrarPost ? `<span data-delete-post="${p.id}" style="cursor:pointer; color:var(--text-faint); font-size:16px;" title="Borrar publicación">✕</span>` : ''}
         </div>
-        <p class="p-text">${esc(p.descripcion || '')}</p>
         ${p.fotoUrl ? `<img src="${esc(p.fotoUrl)}" alt="Foto del café" style="width:100%; border-radius:12px; margin-top:10px; display:block;">` : ''}
-        <div class="p-actions"><span>💬 ${p.comments.length}</span></div>
+        <div style="display:flex; gap:14px; margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--text-dim);">
+          <span>${esc(ext.dosisG)}g → ${esc(ext.aguaG)}g${ext.tiempoSeg ? ' · '+esc(ext.tiempoSeg)+'s' : ''}</span>
+        </div>
+        <div style="display:flex; gap:14px; margin-top:2px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--text-dim);">
+          <span>${ext.temperaturaC ? esc(ext.temperaturaC)+'°C · ' : ''}${esc(ext.ratio)}</span>
+        </div>
+        ${sabores.length ? `<p class="card-sub" style="margin-top:8px;">🍑 ${sabores.map(esc).join(' · ')}</p>` : ''}
+        ${p.descripcion ? `<p class="p-text" style="margin-top:8px;">${esc(p.descripcion)}</p>` : ''}
+        <div class="p-actions" style="display:flex; align-items:center; gap:16px; margin-top:10px;">
+          <span data-like-post="${p.id}" style="cursor:pointer; color:${p.likeadoPorMi ? 'var(--holo-1)' : 'inherit'};">${p.likeadoPorMi ? '♥' : '♡'} ${p.totalLikes}</span>
+          <span>💬 ${p.comments.length}</span>
+        </div>
         ${p.comments.map(c=>{
           const puedeBorrar = sessionUser && (sessionUser.id === c.userId || sessionUser.role === 'administrador');
           return `
@@ -2912,6 +2937,16 @@
         </div>
       </div>`;
     }).join('');
+
+    document.querySelectorAll('[data-like-post]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        if(!sessionUser){ toast('Iniciá sesión para dar me gusta.'); return; }
+        try{
+          await apiFetch(`/community/${el.dataset.likePost}/like`, { method:'POST' });
+          await renderComunidad();
+        }catch(e){ toast('No se pudo: ' + e.message); }
+      });
+    });
 
     document.querySelectorAll('[data-comment-post]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{

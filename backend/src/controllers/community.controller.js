@@ -10,9 +10,44 @@ async function listarFeed(req, res, next) {
         extraction: true,
         user: { select: { username: true, avatarUrl: true } },
         comments: { include: { user: { select: { username: true, avatarUrl: true } } }, orderBy: { createdAt: 'asc' } },
+        _count: { select: { likes: true } },
+        // Si el visitante está logueado, se trae puntualmente su
+        // propio like (si existe) para saber si mostrar el corazón
+        // lleno o vacío — nunca se expone quién más dio like.
+        likes: req.user ? { where: { userId: req.user.sub }, select: { id: true } } : false,
       },
     });
-    res.json(posts);
+    const posEnriquecidos = posts.map(p => {
+      const { _count, likes, ...resto } = p;
+      return { ...resto, totalLikes: _count.likes, likeadoPorMi: req.user ? likes.length > 0 : false };
+    });
+    res.json(posEnriquecidos);
+  } catch (e) { next(e); }
+}
+
+async function toggleLike(req, res, next) {
+  try {
+    const post = await prisma.communityPost.findUnique({ where: { id: req.params.id } });
+    if (!post) return res.status(404).json({ error: 'Publicación no encontrada.' });
+
+    const existente = await prisma.like.findUnique({
+      where: { postId_userId: { postId: req.params.id, userId: req.user.sub } },
+    });
+
+    if (existente) {
+      await prisma.like.delete({ where: { id: existente.id } });
+    } else {
+      await prisma.like.create({ data: { postId: req.params.id, userId: req.user.sub } });
+      if (post.userId !== req.user.sub) {
+        await crearNotificacion({
+          userId: post.userId,
+          tipo: 'like',
+          mensaje: `A alguien le gustó tu extracción publicada.`,
+        });
+      }
+    }
+    const totalLikes = await prisma.like.count({ where: { postId: req.params.id } });
+    res.json({ liked: !existente, totalLikes });
   } catch (e) { next(e); }
 }
 
@@ -102,4 +137,4 @@ async function eliminarPost(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listarFeed, publicar, comentar, eliminarComentario, eliminarPost };
+module.exports = { listarFeed, publicar, comentar, eliminarComentario, eliminarPost, toggleLike };

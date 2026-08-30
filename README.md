@@ -442,6 +442,26 @@ Basado en la imagen de referencia que pasaste (radar + barras de rango).
 - 100% frontend — los tres endpoints ya devolvían todo lo necesario
   (`authorId`/`addedById`), no hizo falta tocar el backend.
 
+## Comunidad rediseñada como red social
+
+- ✅ **Tarjetas rediseñadas**: cada publicación ahora muestra café,
+  dosis→rendimiento, tiempo, temperatura y ratio de un vistazo — antes
+  era solo método + ratio + categoría en una línea.
+- ✅ **Descriptores de sabor**: si cargaste la evaluación sensorial al
+  registrar (dulzor/acidez/cuerpo/amargor), la tarjeta muestra 1-3
+  palabras derivadas de esos valores (ej. "Dulce", "Ácido / Frutal")
+  cuando alguno fue notablemente alto (7+/10) — nunca inventa
+  sabores, solo traduce números reales que vos mismo cargaste.
+- ✅ **Sistema de "me gusta"** (❤️): nueva tabla `Like` con restricción
+  única por publicación+usuario (no se puede likear dos veces). Toca
+  el corazón para dar o sacar el like — se actualiza al toque. Le
+  llega una notificación al autor la primera vez que alguien le da
+  like (no en cada toggle). El feed sigue siendo público (no hace
+  falta login para verlo), pero si estás logueado también sabe cuáles
+  ya likeaste.
+
+**Esta ronda requiere migración** (tabla `Like` nueva).
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

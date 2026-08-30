@@ -37,4 +37,21 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+// Variante de requireAuth para rutas públicas que igual quieren saber
+// "quién sos" si venís logueado (por ejemplo, para marcar qué
+// publicaciones ya likeaste) — nunca bloquea el pedido, solo agrega
+// req.user si el token es válido.
+async function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) return next();
+  try {
+    const payload = verifyToken(header.replace('Bearer ', ''));
+    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { tokenVersion: true, role: true } });
+    if (user && user.tokenVersion === payload.tokenVersion) {
+      req.user = { ...payload, role: user.role };
+    }
+  } catch (e) { /* token inválido: seguimos como visitante anónimo */ }
+  next();
+}
+
+module.exports = { requireAuth, requireRole, optionalAuth };

@@ -31,6 +31,26 @@ model User {
   comments       Comment[]
   loginEvents    LoginEvent[]
   notifications  Notification[]
+  experimentos   Experimento[]
+}
+
+// Laboratorio de experimentación: hipótesis → variable modificada →
+// resultado esperado vs. resultado real → conclusión. Es privado de
+// cada usuario (su propio cuaderno de laboratorio), no público como
+// las recetas.
+model Experimento {
+  id                  String   @id @default(uuid())
+  user                User     @relation(fields: [userId], references: [id])
+  userId              String
+  hipotesis           String
+  variableModificada  String
+  variablesConstantes String?
+  resultadoEsperado   String?
+  resultadoReal       String?
+  conclusion          String?
+  estado              String   @default("en_curso")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 // Registro de accesos — usado por el panel de administrador para ver

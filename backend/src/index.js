@@ -25,6 +25,7 @@ const usersRoutes = require('./routes/users.routes');
 const tdsRoutes = require('./routes/tds.routes');
 const uploadsRoutes = require('./routes/uploads.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
+const experimentosRoutes = require('./routes/experimentos.routes');
 
 const app = express();
 
@@ -82,6 +83,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/tds', tdsRoutes);
 app.use('/api/uploads', uploadsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/experimentos', experimentosRoutes);
 
 // Manejador de errores: nunca se devuelve el stack trace, ni el detalle
 // interno de una consulta, al cliente — solo un mensaje entendible. El

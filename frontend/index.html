@@ -545,6 +545,10 @@
             <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14h7l-1 8 9-12h-7z"/></svg></span></div>
             <div class="t">Insights</div>
           </div>
+          <div class="grid-tile" data-nav="laboratorio">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M9 2v6l-6 10a2 2 0 002 3h14a2 2 0 002-3L15 8V2"/><path d="M9 2h6"/><path d="M9 12h6"/></svg></span></div>
+            <div class="t">Laboratorio</div>
+          </div>
           <div class="grid-tile" data-nav="papers">
             <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></span></div>
             <div class="t">Papers científicos</div>
@@ -581,6 +585,10 @@
         <div class="grid-tile" data-nav="insights">
           <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14h7l-1 8 9-12h-7z"/></svg></span></div>
           <div class="t">Insights</div>
+        </div>
+        <div class="grid-tile" data-nav="laboratorio">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M9 2v6l-6 10a2 2 0 002 3h14a2 2 0 002-3L15 8V2"/><path d="M9 2h6"/><path d="M9 12h6"/></svg></span></div>
+          <div class="t">Laboratorio</div>
         </div>
         <div class="grid-tile" data-nav="papers">
           <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></span></div>
@@ -832,6 +840,66 @@
       </div>
       <p class="hint">Basado en tus propios datos registrados. Si algo no tiene suficiente evidencia, te lo decimos directamente en vez de inventar.</p>
       <div id="insightsContent"></div>
+    </div>
+
+    <!-- LABORATORIO -->
+    <div class="view" id="view-laboratorio">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Laboratorio</h1>
+      </div>
+      <p class="hint">Tu cuaderno de experimentos: hipótesis → variable → resultado → conclusión. Es privado, solo vos lo ves.</p>
+      <button class="primary-btn" id="nuevoExperimentoBtn" data-nav="nuevo-experimento" style="margin-bottom:16px;">+ Nuevo experimento</button>
+      <div id="laboratorioList"></div>
+    </div>
+
+    <!-- NUEVO EXPERIMENTO -->
+    <div class="view" id="view-nuevo-experimento">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="laboratorio"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Nuevo experimento</h1>
+      </div>
+      <div class="card">
+        <label>Hipótesis</label>
+        <textarea id="expHipotesis" placeholder="Ej: Reducir la temperatura disminuirá la percepción de amargor."></textarea>
+        <label style="margin-top:10px;">Variable que voy a cambiar</label>
+        <input type="text" id="expVariable" placeholder="Ej: Temperatura del agua">
+        <label style="margin-top:10px;">Variables que voy a mantener constantes</label>
+        <textarea id="expConstantes" placeholder="Ej: Dosis, molienda, café, agua y ratio"></textarea>
+        <label style="margin-top:10px;">Resultado esperado</label>
+        <textarea id="expEsperado" placeholder="Qué esperás que pase"></textarea>
+        <p class="auth-error" id="expError"></p>
+        <button class="primary-btn" id="expCrearBtn" style="margin-top:14px;">Crear experimento</button>
+      </div>
+    </div>
+
+    <!-- DETALLE DE EXPERIMENTO -->
+    <div class="view" id="view-detalle-experimento">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="laboratorio"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Experimento</h1>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Hipótesis</p>
+        <p class="card-sub" id="detExpHipotesis" style="font-size:13px;"></p>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Variable modificada</p>
+        <p class="card-sub" id="detExpVariable" style="font-size:13px;"></p>
+        <p class="eyebrow" style="margin-top:14px;">Variables constantes</p>
+        <p class="card-sub" id="detExpConstantes" style="font-size:13px;"></p>
+        <p class="eyebrow" style="margin-top:14px;">Resultado esperado</p>
+        <p class="card-sub" id="detExpEsperado" style="font-size:13px;"></p>
+      </div>
+      <div class="card">
+        <label>Resultado real (dato observado)</label>
+        <textarea id="detExpReal" placeholder="Qué pasó realmente"></textarea>
+        <label style="margin-top:10px;">Conclusión (tu interpretación)</label>
+        <textarea id="detExpConclusion" placeholder="Coincide con... / Podría estar asociado a..."></textarea>
+        <p class="auth-error" id="detExpError"></p>
+        <button class="primary-btn" id="detExpGuardarBtn" style="margin-top:14px;">Guardar resultado</button>
+      </div>
+      <button class="ghost-btn" id="detExpBorrarBtn">Borrar experimento</button>
     </div>
 
     <!-- BÚSQUEDA GLOBAL -->
@@ -1197,7 +1265,7 @@
   let recetasCustom = [];
 
   // ---------- Navigation ----------
-  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', busqueda:'inicio', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad', 'historial-receta':'recetas' };
+  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', busqueda:'inicio', laboratorio:'explorar', 'nuevo-experimento':'laboratorio', 'detalle-experimento':'laboratorio', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad', 'historial-receta':'recetas' };
   const navTabs = ['inicio','explorar','registro','comunidad','perfil'];
 
   function showView(name){
@@ -1213,6 +1281,7 @@
     if(name === 'comunidad') renderComunidad();
     if(name === 'cafes'){ mapaPaisFiltro = null; renderMapaMundial(); renderFichasCafe(); }
     if(name === 'insights') renderInsights();
+    if(name === 'laboratorio') renderLaboratorio();
     window.scrollTo(0,0);
   }
   document.querySelectorAll('[data-nav]').forEach(el=>{
@@ -1663,6 +1732,94 @@
       });
     });
   }
+
+  // ---------- LABORATORIO DE EXPERIMENTOS ----------
+  async function renderLaboratorio(){
+    const list = document.getElementById('laboratorioList');
+    if(!sessionUser){ list.innerHTML = '<p class="empty-note">Iniciá sesión para ver tu laboratorio.</p>'; return; }
+    list.innerHTML = '<p class="empty-note">Cargando...</p>';
+    let experimentos = [];
+    try{ experimentos = await apiFetch('/experimentos'); }
+    catch(e){ list.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
+    if(experimentos.length === 0){
+      list.innerHTML = '<p class="empty-note">Todavía no armaste ningún experimento.</p>';
+      return;
+    }
+    list.innerHTML = experimentos.map(exp=>`
+      <div class="card" style="cursor:pointer;" data-exp-id="${exp.id}">
+        <span class="tag" style="background:${exp.estado==='completado' ? 'linear-gradient(100deg, var(--holo-3), var(--holo-2))' : 'linear-gradient(100deg, var(--holo-1), var(--holo-2))'};">${exp.estado==='completado' ? 'Completado' : 'En curso'}</span>
+        <p class="card-title" style="margin-top:6px; font-size:13.5px;">${esc(exp.hipotesis)}</p>
+        <p class="card-sub" style="margin-top:4px;">Variable: ${esc(exp.variableModificada)}</p>
+      </div>`).join('');
+    list.querySelectorAll('[data-exp-id]').forEach(el=>{
+      el.addEventListener('click', ()=> abrirDetalleExperimento(el.dataset.expId));
+    });
+  }
+
+  document.getElementById('expCrearBtn').addEventListener('click', async ()=>{
+    const errEl = document.getElementById('expError');
+    errEl.textContent = '';
+    const hipotesis = document.getElementById('expHipotesis').value.trim();
+    const variableModificada = document.getElementById('expVariable').value.trim();
+    if(!hipotesis){ errEl.textContent = 'La hipótesis es obligatoria.'; return; }
+    if(!variableModificada){ errEl.textContent = 'Indicá qué variable vas a modificar.'; return; }
+    try{
+      await apiFetch('/experimentos', { method:'POST', body: JSON.stringify({
+        hipotesis,
+        variableModificada,
+        variablesConstantes: document.getElementById('expConstantes').value.trim() || undefined,
+        resultadoEsperado: document.getElementById('expEsperado').value.trim() || undefined,
+      })});
+      ['expHipotesis','expVariable','expConstantes','expEsperado'].forEach(id=> document.getElementById(id).value = '');
+      toast('Experimento creado');
+      showView('laboratorio');
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  let detalleExperimentoId = null;
+  async function abrirDetalleExperimento(id){
+    detalleExperimentoId = id;
+    showView('detalle-experimento');
+    document.getElementById('detExpError').textContent = '';
+    let experimentos = [];
+    try{ experimentos = await apiFetch('/experimentos'); }
+    catch(e){ toast('No se pudo cargar: ' + e.message); return; }
+    const exp = experimentos.find(x=>x.id===id);
+    if(!exp) return;
+    document.getElementById('detExpHipotesis').textContent = exp.hipotesis;
+    document.getElementById('detExpVariable').textContent = exp.variableModificada;
+    document.getElementById('detExpConstantes').textContent = exp.variablesConstantes || '—';
+    document.getElementById('detExpEsperado').textContent = exp.resultadoEsperado || '—';
+    document.getElementById('detExpReal').value = exp.resultadoReal || '';
+    document.getElementById('detExpConclusion').value = exp.conclusion || '';
+  }
+
+  document.getElementById('detExpGuardarBtn').addEventListener('click', async ()=>{
+    if(!detalleExperimentoId) return;
+    const errEl = document.getElementById('detExpError');
+    errEl.textContent = '';
+    const resultadoReal = document.getElementById('detExpReal').value.trim();
+    const conclusion = document.getElementById('detExpConclusion').value.trim();
+    try{
+      await apiFetch(`/experimentos/${detalleExperimentoId}`, { method:'PUT', body: JSON.stringify({
+        resultadoReal: resultadoReal || null,
+        conclusion: conclusion || null,
+        estado: (resultadoReal && conclusion) ? 'completado' : 'en_curso',
+      })});
+      toast('Resultado guardado');
+      showView('laboratorio');
+    }catch(e){ errEl.textContent = e.message; }
+  });
+
+  document.getElementById('detExpBorrarBtn').addEventListener('click', async ()=>{
+    if(!detalleExperimentoId) return;
+    if(!confirm('¿Borrar este experimento? No se puede deshacer.')) return;
+    try{
+      await apiFetch(`/experimentos/${detalleExperimentoId}`, { method:'DELETE' });
+      toast('Experimento borrado');
+      showView('laboratorio');
+    }catch(e){ toast('No se pudo borrar: ' + e.message); }
+  });
 
   // ---------- RECETAS ----------
   function heroSvg(accent, iconPaths){

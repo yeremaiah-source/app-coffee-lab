@@ -321,14 +321,26 @@ entender → mejorar":
   arriba.
 
 ### Lo que queda pendiente de ese documento (para las próximas rondas)
-- Los 3 modos de dashboard (Operación / Profesional / Laboratorio).
+- Los 3 modos de dashboard (Operación / Profesional / Laboratorio de UI).
 - Comparación visual lado a lado de 2+ extracciones elegidas a mano
   (hoy el backend `/api/extractions/comparar` ya soporta esto, falta
   la pantalla).
 - Fichas de café con historial de extracciones asociadas.
-- Módulo de laboratorio/experimentos (hipótesis → variable → resultado
-  → conclusión).
 - Parámetros planificados vs. ejecutados en el registro de extracción.
+
+## Laboratorio de experimentos
+
+- ✅ **Módulo de experimentación completo**: nueva tabla `Experimento`
+  (privada de cada usuario, no pública como las recetas) con hipótesis,
+  variable a modificar, variables constantes, resultado esperado,
+  resultado real y conclusión — exactamente la estructura que pedía el
+  documento. Se accede desde Explorar → Laboratorio.
+- ✅ Un experimento arranca "en curso"; pasa a "completado" solo cuando
+  cargás resultado real **y** conclusión, nunca automáticamente.
+- ✅ Podés borrar tus propios experimentos (o un administrador, el de
+  cualquiera).
+
+**Esta ronda sí requiere migración de base de datos** (tabla nueva).
 
 ## Búsqueda global
 

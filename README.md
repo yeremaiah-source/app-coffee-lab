@@ -325,14 +325,25 @@ entender → mejorar":
 - Comparación visual lado a lado de 2+ extracciones elegidas a mano
   (hoy el backend `/api/extractions/comparar` ya soporta esto, falta
   la pantalla).
-- Versionado visual de recetas (v1, v2, v3 con comparación entre
-  versiones) — el modelo de datos ya soporta versiones
-  (`parentRecipeId`), falta la UI de comparación.
 - Fichas de café con historial de extracciones asociadas.
 - Módulo de laboratorio/experimentos (hipótesis → variable → resultado
   → conclusión).
 - Búsqueda global.
 - Parámetros planificados vs. ejecutados en el registro de extracción.
+
+## Versionado visual de recetas (v1, v2, v3...)
+
+- ✅ **Historial completo de versiones** (`GET /api/recipes/:id/historial`):
+  sube hasta encontrar la versión raíz (v1) y baja juntando todos los
+  descendientes, sin importar quién los haya duplicado — así se puede
+  ver la evolución completa de una receta aunque distintas personas
+  la hayan modificado.
+- ✅ Nuevo botón "Ver historial" (ícono de reloj) en cada receta
+  publicada, que abre una línea de tiempo con todas sus versiones.
+- ✅ **Comparación entre dos versiones**: tocás cualquiera de las dos
+  que quieras comparar y la app muestra las diferencias reales (dosis,
+  agua, temperatura, tiempo, molienda, ratio) entre esa versión
+  anterior y la posterior, más las notas de la versión más nueva.
 
 ### Para probar el frontend contra tu backend local
 

@@ -92,4 +92,44 @@ async function actualizar(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, crear, duplicar, actualizar };
+// Devuelve toda la "familia" de versiones de una receta: sube hasta
+// encontrar la raíz (v1, sin parentRecipeId) y después baja juntando
+// todos los descendientes, sea quien sea que los haya duplicado — así
+// se puede ver v1, v2, v3... aunque las hayan modificado personas
+// distintas.
+async function historial(req, res, next) {
+  try {
+    let actual = await prisma.recipe.findUnique({ where: { id: req.params.id } });
+    if (!actual) return res.status(404).json({ error: 'Receta no encontrada.' });
+
+    // Subir hasta la raíz.
+    let raiz = actual;
+    while (raiz.parentRecipeId) {
+      const padre = await prisma.recipe.findUnique({ where: { id: raiz.parentRecipeId } });
+      if (!padre) break;
+      raiz = padre;
+    }
+
+    // Bajar por todos los descendientes (por niveles, sin límite de
+    // profundidad fijo — Prisma no soporta consultas recursivas
+    // nativas, así que se arma a mano).
+    const familia = [raiz];
+    let nivelActualIds = [raiz.id];
+    while (nivelActualIds.length > 0) {
+      const hijos = await prisma.recipe.findMany({ where: { parentRecipeId: { in: nivelActualIds } } });
+      if (hijos.length === 0) break;
+      familia.push(...hijos);
+      nivelActualIds = hijos.map(h => h.id);
+    }
+
+    const familiaConAutor = await prisma.recipe.findMany({
+      where: { id: { in: familia.map(f => f.id) } },
+      include: { author: { select: { username: true } } },
+      orderBy: { version: 'asc' },
+    });
+
+    res.json(familiaConAutor);
+  } catch (e) { next(e); }
+}
+
+module.exports = { listar, crear, duplicar, actualizar, historial };

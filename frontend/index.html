@@ -798,6 +798,17 @@
       </div>
     </div>
 
+    <!-- HISTORIAL DE VERSIONES DE RECETA -->
+    <div class="view" id="view-historial-receta">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="recetas"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Historial de versiones</h1>
+      </div>
+      <p class="hint">Tocá dos versiones para comparar qué cambió entre ellas.</p>
+      <div id="historialRecetaList"></div>
+      <div class="card" id="historialComparacionCard" style="display:none;"></div>
+    </div>
+
     <!-- CIENCIA -->
     <div class="view" id="view-ciencia">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
@@ -1151,7 +1162,7 @@
   let recetasCustom = [];
 
   // ---------- Navigation ----------
-  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad' };
+  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad', 'historial-receta':'recetas' };
   const navTabs = ['inicio','explorar','registro','comunidad','perfil'];
 
   function showView(name){
@@ -1579,6 +1590,9 @@
             ${r.id ? `<button class="icon-btn" data-duplicate-recipe="${r.id}" title="Duplicar y modificar">
               <span class="icon"><svg viewBox="0 0 24 24"><path d="M8 8h11v11H8z"/><path d="M5 16H4V4h12v1"/></svg></span>
             </button>` : ''}
+            ${r.id ? `<button class="icon-btn" data-ver-historial="${r.id}" title="Ver historial de versiones">
+              <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>
+            </button>` : ''}
           </div>` : ''}
         </div>
         <div class="rc-body">
@@ -1611,6 +1625,12 @@
       el.addEventListener('click', (e)=>{
         e.stopPropagation();
         abrirPerfilPublico(el.dataset.openPerfil, 'recetas');
+      });
+    });
+    document.querySelectorAll('[data-ver-historial]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        abrirHistorialReceta(btn.dataset.verHistorial);
       });
     });
   }
@@ -1703,6 +1723,101 @@
       showView('recetas');
     }catch(e){ errEl.textContent = e.message; }
   });
+
+  // ---------- HISTORIAL DE VERSIONES DE RECETA ----------
+  let historialFamilia = [];
+  let historialSeleccionA = null;
+
+  async function abrirHistorialReceta(recipeId){
+    showView('historial-receta');
+    historialSeleccionA = null;
+    document.getElementById('historialComparacionCard').style.display = 'none';
+    const list = document.getElementById('historialRecetaList');
+    list.innerHTML = '<p class="empty-note">Cargando...</p>';
+    try{
+      historialFamilia = await apiFetch(`/recipes/${recipeId}/historial`);
+    }catch(e){
+      list.innerHTML = '<p class="empty-note">No se pudo cargar el historial: ' + e.message + '</p>';
+      return;
+    }
+    renderHistorialList();
+  }
+
+  function renderHistorialList(){
+    const list = document.getElementById('historialRecetaList');
+    if(historialFamilia.length <= 1){
+      list.innerHTML = '<p class="empty-note">Esta receta todavía no tiene otras versiones — duplicala para empezar a versionarla.</p>';
+      return;
+    }
+    list.innerHTML = historialFamilia.map(v=>{
+      const esActivaA = historialSeleccionA === v.id;
+      return `
+      <div class="card" style="cursor:pointer; ${esActivaA ? 'border-color:var(--holo-2);' : ''}" data-version-id="${v.id}">
+        <div class="card-row">
+          <div>
+            <span class="tag">v${v.version}</span>
+            <p class="card-title" style="margin-top:6px;">${esc(v.nombre)}</p>
+            <p class="card-sub">por ${esc(v.author.username)} · ${new Date(v.createdAt).toLocaleDateString('es-AR')}</p>
+          </div>
+        </div>
+        <p class="card-sub" style="margin-top:8px;">${esc(v.ratio || '')}${v.dosisG ? ' · '+esc(v.dosisG)+'g' : ''}${v.tiempoSeg ? ' · '+esc(v.tiempoSeg)+'s' : ''}</p>
+        ${v.notas ? `<p class="card-sub" style="margin-top:4px;">${esc(v.notas)}</p>` : ''}
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('#historialRecetaList [data-version-id]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const id = el.dataset.versionId;
+        if(!historialSeleccionA){
+          historialSeleccionA = id;
+          renderHistorialList();
+          toast('Elegí otra versión para comparar');
+        } else if(historialSeleccionA === id){
+          historialSeleccionA = null;
+          document.getElementById('historialComparacionCard').style.display = 'none';
+          renderHistorialList();
+        } else {
+          mostrarComparacionVersiones(historialSeleccionA, id);
+          historialSeleccionA = null;
+          renderHistorialList();
+        }
+      });
+    });
+  }
+
+  function mostrarComparacionVersiones(idA, idB){
+    const a = historialFamilia.find(v=>v.id===idA);
+    const b = historialFamilia.find(v=>v.id===idB);
+    if(!a || !b) return;
+    const [vieja, nueva] = a.version < b.version ? [a,b] : [b,a];
+    const campos = [
+      {campo:'dosisG', nombre:'Dosis', unidad:'g'},
+      {campo:'aguaG', nombre:'Agua', unidad:'g'},
+      {campo:'temperaturaC', nombre:'Temperatura', unidad:'°C'},
+      {campo:'tiempoSeg', nombre:'Tiempo', unidad:'s'},
+    ];
+    const diferencias = [];
+    campos.forEach(c=>{
+      if(vieja[c.campo] != null && nueva[c.campo] != null && vieja[c.campo] !== nueva[c.campo]){
+        const diff = nueva[c.campo] - vieja[c.campo];
+        diferencias.push(`${c.nombre}: ${diff>0?'+':''}${diff.toFixed(1)}${c.unidad} (v${vieja.version}→v${nueva.version})`);
+      }
+    });
+    if(vieja.molienda !== nueva.molienda && vieja.molienda && nueva.molienda){
+      diferencias.push(`Molienda: "${esc(vieja.molienda)}" → "${esc(nueva.molienda)}"`);
+    }
+    if(vieja.ratio !== nueva.ratio && vieja.ratio && nueva.ratio){
+      diferencias.push(`Ratio: ${esc(vieja.ratio)} → ${esc(nueva.ratio)}`);
+    }
+    const card = document.getElementById('historialComparacionCard');
+    card.style.display = 'block';
+    card.innerHTML = `
+      <p class="eyebrow">Comparando v${vieja.version} vs. v${nueva.version}</p>
+      ${diferencias.length ? diferencias.map(d=>`<p class="card-sub" style="margin-top:6px;">· ${d}</p>`).join('') : '<p class="card-sub" style="margin-top:6px;">No hay diferencias en los parámetros registrados entre estas dos versiones.</p>'}
+      ${nueva.notas ? `<p class="card-sub" style="margin-top:10px;"><b>Notas de v${nueva.version}:</b> ${esc(nueva.notas)}</p>` : ''}`;
+    card.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+
 
   // ---------- CIENCIA ----------
   const ciencia = [

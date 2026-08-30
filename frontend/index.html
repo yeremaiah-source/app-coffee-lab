@@ -1013,6 +1013,24 @@
       <button class="ghost-btn" id="addCoffeeBtn" data-nav="nuevo-cafe">+ Agregar ficha de café</button>
     </div>
 
+    <!-- DETALLE DE FICHA DE CAFE -->
+    <div class="view" id="view-detalle-cafe">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="cafes"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;" id="detCafeNombre">Café</h1>
+      </div>
+      <div class="card">
+        <p class="card-sub" id="detCafeOrigen" style="margin-bottom:10px;"></p>
+        <div class="stat-row" id="detCafeStats"></div>
+        <p class="card-sub" id="detCafeNotas" style="margin-top:12px;"></p>
+        <p class="card-sub" id="detCafeAgregadoPor" style="margin-top:10px; font-size:11px; color:var(--text-faint);"></p>
+      </div>
+      <p class="eyebrow" style="margin-top:22px;">Tus extracciones con este café</p>
+      <div id="detCafeMisExtracciones"></div>
+      <p class="eyebrow" style="margin-top:22px;">Publicadas en la comunidad con este café</p>
+      <div id="detCafeComunidad"></div>
+    </div>
+
     <!-- NUEVA FICHA DE CAFE -->
     <div class="view" id="view-nuevo-cafe">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
@@ -1307,7 +1325,7 @@
   let recetasCustom = [];
 
   // ---------- Navigation ----------
-  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', busqueda:'inicio', laboratorio:'explorar', 'nuevo-experimento':'laboratorio', 'detalle-experimento':'laboratorio', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad', 'historial-receta':'recetas' };
+  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', busqueda:'inicio', laboratorio:'explorar', 'nuevo-experimento':'laboratorio', 'detalle-experimento':'laboratorio', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad', 'historial-receta':'recetas', 'detalle-cafe':'cafes' };
   const navTabs = ['inicio','explorar','registro','comunidad','perfil'];
 
   function showView(name){
@@ -2678,12 +2696,73 @@
       return;
     }
     list.innerHTML = filtradas.map(c=>`
-      <div class="card article-card">
+      <div class="card article-card" style="cursor:pointer;" data-cafe-id="${c.id}">
         <p class="a-title">${esc(c.nombre)}</p>
         <p class="card-sub" style="margin-bottom:6px;">${esc([c.pais, c.region, c.variedad, c.proceso].filter(Boolean).join(' · ')) || 'Sin datos de origen'}</p>
         ${c.notasSensoriales ? `<p class="a-desc">${esc(c.notasSensoriales)}</p>` : ''}
         <p class="card-sub" style="margin-top:6px;">agregado por ${esc(c.addedBy ? c.addedBy.username : '—')}</p>
       </div>`).join('');
+    list.querySelectorAll('[data-cafe-id]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const ficha = coffees.find(c=>c.id === el.dataset.cafeId);
+        if(ficha) abrirDetalleCafe(ficha);
+      });
+    });
+  }
+
+  function normalizarNombreCafe(str){
+    return (str||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  }
+
+  async function abrirDetalleCafe(ficha){
+    showView('detalle-cafe');
+    document.getElementById('detCafeNombre').textContent = ficha.nombre;
+    document.getElementById('detCafeOrigen').textContent = [ficha.pais, ficha.region, ficha.productor].filter(Boolean).join(' · ') || 'Sin datos de origen';
+    document.getElementById('detCafeStats').innerHTML = `
+      <div class="stat"><div class="k">Variedad</div><div class="v" style="font-size:13px;">${esc(ficha.variedad || '—')}</div></div>
+      <div class="stat"><div class="k">Proceso</div><div class="v" style="font-size:13px;">${esc(ficha.proceso || '—')}</div></div>
+      <div class="stat"><div class="k">Altitud</div><div class="v" style="font-size:13px;">${ficha.altitudMsnm ? ficha.altitudMsnm+' msnm' : '—'}</div></div>`;
+    document.getElementById('detCafeNotas').textContent = ficha.notasSensoriales || '';
+    document.getElementById('detCafeAgregadoPor').textContent = `Ficha agregada por ${ficha.addedBy ? '@'+ficha.addedBy.username : 'la comunidad'}`;
+
+    const nombreNorm = normalizarNombreCafe(ficha.nombre);
+
+    // Tus propias extracciones (privadas) que coinciden por nombre de café.
+    const misExt = extracciones.filter(e => normalizarNombreCafe(e.cafe) === nombreNorm);
+    const misExtCont = document.getElementById('detCafeMisExtracciones');
+    if(!sessionUser){
+      misExtCont.innerHTML = '<p class="empty-note">Iniciá sesión para ver tu historial con este café.</p>';
+    } else if(misExt.length === 0){
+      misExtCont.innerHTML = '<p class="empty-note">Todavía no registraste ninguna extracción con este café.</p>';
+    } else {
+      misExtCont.innerHTML = misExt.map(e=>`
+        <div class="card" style="margin-bottom:8px; padding:12px;">
+          <p class="card-title" style="font-size:13px;">${esc(e.metodo)} · ${esc(e.ratio)}</p>
+          <p class="card-sub">${e.ey!=null ? e.ey.toFixed(1)+'% EY' : ''}${e.categoria ? ' · '+esc(e.categoria) : ''} · ${new Date(e.createdAt).toLocaleDateString('es-AR')}</p>
+        </div>`).join('');
+    }
+
+    // Publicaciones de la comunidad (públicas) con este café.
+    const comContainer = document.getElementById('detCafeComunidad');
+    comContainer.innerHTML = '<p class="empty-note">Cargando...</p>';
+    try{
+      const posts = await apiFetch('/community');
+      const coincidencias = posts.filter(p => normalizarNombreCafe(p.extraction.cafe) === nombreNorm);
+      if(coincidencias.length === 0){
+        comContainer.innerHTML = '<p class="empty-note">Nadie publicó todavía una extracción con este café.</p>';
+      } else {
+        comContainer.innerHTML = coincidencias.map(p=>`
+          <div class="card" style="margin-bottom:8px; padding:12px; cursor:pointer;" data-open-perfil="${esc(p.user.username)}">
+            <p class="card-title" style="font-size:13px;">@${esc(p.user.username)} · ${esc(p.extraction.metodo)}</p>
+            <p class="card-sub">${p.extraction.ey!=null ? p.extraction.ey.toFixed(1)+'% EY' : ''}${p.extraction.categoria ? ' · '+esc(p.extraction.categoria) : ''}</p>
+          </div>`).join('');
+        comContainer.querySelectorAll('[data-open-perfil]').forEach(el=>{
+          el.addEventListener('click', ()=> abrirPerfilPublico(el.dataset.openPerfil, 'cafes'));
+        });
+      }
+    }catch(e){
+      comContainer.innerHTML = '<p class="empty-note">No se pudo cargar la comunidad.</p>';
+    }
   }
 
   document.getElementById('ncSubmitBtn').addEventListener('click', async ()=>{

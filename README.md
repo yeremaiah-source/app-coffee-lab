@@ -325,8 +325,23 @@ entender → mejorar":
 - Comparación visual lado a lado de 2+ extracciones elegidas a mano
   (hoy el backend `/api/extractions/comparar` ya soporta esto, falta
   la pantalla).
-- Fichas de café con historial de extracciones asociadas.
 - Parámetros planificados vs. ejecutados en el registro de extracción.
+
+## Fichas de café con historial
+
+- ✅ **Detalle de ficha de café**: tocar cualquier ficha en Cafés abre
+  su detalle completo (origen, variedad, proceso, altitud, notas
+  sensoriales, quién la agregó) más dos historiales reales:
+  - **Tus extracciones con este café**: filtra tus propias extracciones
+    privadas donde el campo "café" coincide por nombre con la ficha.
+  - **Publicadas en la comunidad con este café**: filtra el feed
+    público de comunidad por el mismo criterio — tocando a alguien te
+    lleva a su perfil.
+- La coincidencia es **por nombre de café** (normalizado, sin
+  mayúsculas ni acentos) — hoy el registro de extracción usa un campo
+  de texto libre para el café, no un enlace directo a una ficha
+  puntual, así que el cruce es por similitud de texto, no por ID. Es
+  100% frontend: no hizo falta ningún endpoint nuevo ni migración.
 
 ## Gráficos de perfil sensorial y rango ideal
 

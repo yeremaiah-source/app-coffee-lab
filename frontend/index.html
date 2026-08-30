@@ -1447,7 +1447,7 @@
       ? `${last.tds}%${last.tdsEstimado ? ' (estimado)' : ''}`
       : '—';
     box.innerHTML = `
-      <p class="card-sub" style="margin-top:2px;">${last.metodo} · ${last.dosisG}g</p>
+      <p class="card-sub" style="margin-top:2px;">${esc(last.metodo)} · ${last.dosisG}g</p>
       <div class="ratio-big">${ratio}</div>
       ${last.categoria ? `<span class="status-pill ${zoneClass}"><span class="dot"></span>${last.categoria}</span>` : ''}
       <div class="stat-row">

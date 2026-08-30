@@ -9,8 +9,13 @@ async function crear(req, res, next) {
     // Validación estricta del lado del servidor — nunca se confía en que
     // el frontend ya validó. Rechaza tipos incorrectos, negativos, cero,
     // y valores fuera de un rango físicamente realista.
-    if (!metodo || typeof metodo !== 'string') {
-      return res.status(400).json({ error: 'El método es obligatorio.' });
+    // El método solo puede ser uno de los que la interfaz realmente
+    // ofrece — nunca texto libre. Esto evita que alguien mande
+    // cualquier string (incluido HTML/script) saltándose la interfaz y
+    // llamando a la API directo.
+    const METODOS_VALIDOS = ['Espresso', 'Filtro', 'Cold Brew', 'Otros'];
+    if (!metodo || !METODOS_VALIDOS.includes(metodo)) {
+      return res.status(400).json({ error: 'El método tiene que ser uno de: ' + METODOS_VALIDOS.join(', ') + '.' });
     }
     if (typeof dosisG !== 'number' || dosisG <= 0 || dosisG > 200) {
       return res.status(400).json({ error: 'La dosis tiene que ser un número mayor a 0 y menor a 200g.' });

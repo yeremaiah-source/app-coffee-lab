@@ -261,6 +261,37 @@ no de memoria. Se encontraron y corrigieron **tres problemas reales**:
 después de reemplazar el `package.json` — sin eso, seguís con las
 versiones viejas instaladas aunque el archivo diga las nuevas.
 
+## Notificaciones masivas (recetas nuevas y anuncios)
+
+- ✅ **Aviso automático de recetas nuevas**: cuando alguien publica una
+  receta (no una versión duplicada), todos los demás usuarios
+  registrados reciben una notificación — `POST /api/recipes` ahora
+  llama a `crearNotificacionMasiva()` en vez de a un solo usuario.
+- ✅ **Anuncios de administrador**: nueva tarjeta en el panel de admin
+  ("Anunciar novedad a todos los usuarios") para avisar de funciones
+  nuevas o cambios importantes — le llega como notificación a todos
+  los usuarios registrados. Vía `POST /api/notifications/anuncio`
+  (protegido por rol administrador).
+- El helper `crearNotificacionMasiva()` usa `createMany` de Prisma —
+  una sola operación a la base de datos en vez de una por usuario,
+  para que esto siga siendo rápido a medida que crezca la cantidad de
+  usuarios registrados.
+
+## Mapa mundial interactivo de orígenes
+
+- ✅ **Mapa mundial en Cafés**: nueva sección con un mapa de puntos
+  interactivo — cada punto representa un país productor con fichas
+  cargadas por la comunidad (tamaño del punto según cuántas fichas
+  hay), posicionado con una proyección simple a partir de coordenadas
+  aproximadas. La tabla cubre **68 países** de todo el cinturón
+  cafetero mundial (África, Medio Oriente, Asia, Centroamérica, el
+  Caribe, Sudamérica y Oceanía) — no solo los 4-5 orígenes más
+  conocidos. Tocar un punto muestra el origen y filtra la lista de
+  fichas de la comunidad para ese país. Es 100% frontend — no necesita
+  ninguna librería de mapas externa ni conexión a un servicio de
+  mapas, y arranca siempre con los 4 orígenes de la guía curada
+  visibles aunque todavía no haya fichas reales cargadas.
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

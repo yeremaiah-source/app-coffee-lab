@@ -23,6 +23,8 @@ const coffeesRoutes = require('./routes/coffees.routes');
 const communityRoutes = require('./routes/community.routes');
 const usersRoutes = require('./routes/users.routes');
 const tdsRoutes = require('./routes/tds.routes');
+const uploadsRoutes = require('./routes/uploads.routes');
+const notificationsRoutes = require('./routes/notifications.routes');
 
 const app = express();
 
@@ -78,13 +80,32 @@ app.use('/api/coffees', coffeesRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/tds', tdsRoutes);
+app.use('/api/uploads', uploadsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
-// Manejador de errores: nunca se devuelve el stack trace al cliente,
-// solo un mensaje. El detalle completo queda en los logs del servidor.
+// Manejador de errores: nunca se devuelve el stack trace, ni el detalle
+// interno de una consulta, al cliente — solo un mensaje entendible. El
+// detalle técnico completo queda en los logs del servidor (console.error).
 app.use((err, req, res, next) => {
   console.error(err);
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'La imagen es demasiado grande (máximo 5MB).' });
+  }
+  // Errores conocidos de Prisma: se traducen a mensajes genéricos en vez
+  // de dejar pasar el texto crudo de la consulta (que puede exponer
+  // nombres de tablas/columnas). Esto es una red de seguridad general —
+  // cada endpoint sensible ya valida esto antes de llegar acá, pero un
+  // caso no contemplado nunca debería filtrar detalle interno igual.
+  if (err.code === 'P2002') {
+    return res.status(409).json({ error: 'Ya existe un registro con ese dato — no se puede duplicar.' });
+  }
+  if (err.code === 'P2025') {
+    return res.status(404).json({ error: 'El registro que buscás no existe.' });
+  }
   const status = err.status || (err.message === 'Origen no permitido por CORS' ? 403 : 500);
-  res.status(status).json({ error: err.message || 'Error interno' });
+  const esErrorDePrisma = typeof err.code === 'string' && err.code.startsWith('P');
+  const mensaje = esErrorDePrisma ? 'No se pudo completar la operación.' : (err.message || 'Error interno');
+  res.status(esErrorDePrisma ? 500 : status).json({ error: mensaje });
 });
 
 const PORT = process.env.PORT || 4000;

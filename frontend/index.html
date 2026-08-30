@@ -378,6 +378,10 @@
     cursor:pointer;
   }
   .aroma-chip.active{background:var(--purple); border-color:var(--purple); color:#fff; font-weight:500;}
+  .map-marker{cursor:pointer; transition:r .15s, opacity .15s;}
+  .map-marker:hover{opacity:.85;}
+  .map-marker.active{stroke:#fff; stroke-width:2;}
+  .map-marker-label{font-family:'Archivo', sans-serif; font-size:9px; font-weight:600; fill:var(--text-dim); pointer-events:none;}
   .aroma-slice{cursor:pointer; stroke:var(--bg); stroke-width:2; transition:opacity .15s, filter .15s;}
   .aroma-slice:hover{opacity:.9;}
   .aroma-slice.active{opacity:1; stroke:#fff; stroke-width:2.5; filter:drop-shadow(0 0 6px rgba(255,255,255,.35));}
@@ -838,6 +842,16 @@
       <div id="cafesList"></div>
       <p class="eyebrow" style="margin-top:22px;">Fincas de referencia mundial</p>
       <div id="fincasPrestigiosasList"></div>
+      <p class="eyebrow" style="margin-top:22px;">Mapa mundial de orígenes</p>
+      <p class="hint" style="margin-bottom:10px;">Tocá un punto para ver el origen y las fichas cargadas por la comunidad desde ese país.</p>
+      <div class="card" style="padding:14px;">
+        <svg id="cafeWorldMap" viewBox="0 0 800 400" width="100%" style="display:block;"></svg>
+      </div>
+      <div class="card" id="cafeMapDetailCard" style="display:none;">
+        <p class="eyebrow" id="cafeMapDetailPais">—</p>
+        <p class="card-sub" id="cafeMapDetailDesc" style="margin-bottom:10px;"></p>
+        <p class="card-title" id="cafeMapDetailCount" style="font-size:13px;"></p>
+      </div>
       <p class="eyebrow" style="margin-top:22px;">Fichas de la comunidad</p>
       <div id="fichasCafeList"></div>
       <button class="ghost-btn" id="addCoffeeBtn" data-nav="nuevo-cafe">+ Agregar ficha de café</button>
@@ -1026,6 +1040,13 @@
         <div id="adminAuditoriaList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;"></div>
       </div>
 
+      <div class="card">
+        <p class="eyebrow">Anunciar novedad a todos los usuarios</p>
+        <p class="card-sub" style="margin-bottom:10px;">Le llega como notificación a todos los usuarios registrados (menos vos). Usalo para avisar de funciones nuevas o cambios importantes.</p>
+        <textarea id="anuncioTexto" placeholder="Ej: Ya podés subir tu foto de perfil desde Perfil 📸"></textarea>
+        <button class="primary-btn" id="anuncioBtn" style="margin-top:10px;">Enviar anuncio a todos</button>
+      </div>
+
       <div class="card grad">
         <p class="eyebrow">Zona de riesgo</p>
         <p class="card-sub" style="margin-bottom:12px;">Borra todas las extracciones y recetas guardadas en este dispositivo. No afecta a los usuarios registrados.</p>
@@ -1126,7 +1147,7 @@
     if(name === 'perfil') renderPerfil();
     if(name === 'admin') renderAdmin();
     if(name === 'comunidad') renderComunidad();
-    if(name === 'cafes') renderFichasCafe();
+    if(name === 'cafes'){ mapaPaisFiltro = null; renderMapaMundial(); renderFichasCafe(); }
     window.scrollTo(0,0);
   }
   document.querySelectorAll('[data-nav]').forEach(el=>{
@@ -1860,16 +1881,131 @@
       <p class="pd">${f.dato}</p>
     </a>`).join('');
 
-  async function renderFichasCafe(){
-    const list = document.getElementById('fichasCafeList');
+  // ---------- MAPA MUNDIAL DE ORÍGENES ----------
+  // Coordenadas aproximadas (lat, lng) de los principales países
+  // productores de café — suficiente para ubicar un punto en el mapa,
+  // no para precisión geográfica.
+  const ORIGENES_COORDS = {
+    // África
+    'etiopia':[9.1,40.5], 'kenia':[-0.5,37.9], 'ruanda':[-1.9,29.9], 'rwanda':[-1.9,29.9],
+    'burundi':[-3.4,29.9], 'tanzania':[-6.4,34.9], 'uganda':[1.4,32.3],
+    'republica democratica del congo':[-4.0,21.8], 'rd congo':[-4.0,21.8], 'congo':[-0.2,15.8],
+    'zambia':[-13.1,27.8], 'malaui':[-13.3,34.3], 'malawi':[-13.3,34.3], 'zimbabue':[-19.0,29.2],
+    'camerun':[5.7,12.7], 'costa de marfil':[7.5,-5.5], 'guinea':[9.9,-9.7],
+    'sierra leona':[8.5,-11.8], 'liberia':[6.4,-9.4], 'togo':[8.6,0.8], 'nigeria':[9.1,8.7],
+    'angola':[-11.2,17.9], 'madagascar':[-18.8,46.9], 'ghana':[7.9,-1.0],
+    // Medio Oriente y Asia
+    'yemen':[15.5,48.5], 'india':[20.6,78.9], 'indonesia':[-0.8,113.9], 'vietnam':[14.1,108.3],
+    'laos':[19.9,102.5], 'tailandia':[15.9,100.9], 'myanmar':[21.9,95.9], 'birmania':[21.9,95.9],
+    'china':[24.5,101.0], 'filipinas':[12.9,121.8], 'papua nueva guinea':[-6.3,143.9],
+    'timor oriental':[-8.9,125.7], 'sri lanka':[7.9,80.7], 'nepal':[28.4,84.1],
+    // Centroamérica y Caribe
+    'mexico':[23.6,-102.5], 'méxico':[23.6,-102.5], 'guatemala':[15.8,-90.2], 'belice':[17.2,-88.5],
+    'honduras':[15.2,-86.2], 'el salvador':[13.8,-88.9], 'costa rica':[9.7,-83.8],
+    'nicaragua':[12.9,-85.2], 'panama':[8.5,-80.8], 'panamá':[8.5,-80.8],
+    'cuba':[21.5,-79.5], 'jamaica':[18.1,-77.3], 'haiti':[19.0,-72.3], 'haití':[19.0,-72.3],
+    'republica dominicana':[18.7,-70.2], 'república dominicana':[18.7,-70.2],
+    'puerto rico':[18.2,-66.6], 'trinidad y tobago':[10.7,-61.2],
+    // Sudamérica
+    'colombia':[4.6,-74.1], 'brasil':[-10.3,-53.2], 'peru':[-9.2,-75.0], 'perú':[-9.2,-75.0],
+    'bolivia':[-16.3,-63.6], 'ecuador':[-1.8,-78.2], 'venezuela':[6.4,-66.6],
+    'paraguay':[-23.4,-58.4], 'guyana':[4.9,-58.9],
+    // Oceanía / otros orígenes conocidos
+    'australia':[-25.3,133.8], 'hawai':[19.9,-155.6], 'hawái':[19.9,-155.6],
+  };
+  function normalizarPais(str){
+    return (str||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  }
+  function proyectar(lat, lng){
+    return { x: (lng+180)/360*800, y: (90-lat)/180*400 };
+  }
+
+  let mapaPaisFiltro = null;
+  let mapaCoffeesCache = [];
+
+  async function renderMapaMundial(){
+    const svg = document.getElementById('cafeWorldMap');
     let coffees = [];
-    try{ coffees = await apiFetch('/coffees'); }
-    catch(e){ list.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
-    if(coffees.length === 0){
-      list.innerHTML = '<p class="empty-note">Todavía no hay fichas publicadas por la comunidad.</p>';
+    try{ coffees = await apiFetch('/coffees'); mapaCoffeesCache = coffees; }
+    catch(e){ mapaCoffeesCache = []; }
+
+    // Cuenta cuántas fichas hay por país (normalizado), y arranca con
+    // los 4 orígenes de la guía curada aunque todavía no tengan fichas,
+    // para que el mapa nunca se vea vacío.
+    const conteo = {};
+    ['etiopia','colombia','brasil','guatemala'].forEach(p=> conteo[p] = 0);
+    coffees.forEach(c=>{
+      const key = normalizarPais(c.pais);
+      if(!key) return;
+      conteo[key] = (conteo[key]||0) + 1;
+    });
+
+    let defs = '<defs>';
+    let html = '';
+    // Manchas difusas puramente decorativas (no representan bordes
+    // reales) para dar sensación de continentes de fondo.
+    const blobs = [
+      {cx:444, cy:189, r:170, color:'var(--holo-3)'},
+      {cx:266, cy:233, r:150, color:'var(--holo-2)'},
+      {cx:211, cy:166, r:90, color:'var(--holo-1)'},
+      {cx:633, cy:178, r:150, color:'var(--holo-2)'},
+    ];
+    defs += `<filter id="mapBlur"><feGaussianBlur stdDeviation="18"/></filter></defs>`;
+    blobs.forEach(b=>{
+      html += `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}" fill="${b.color}" opacity=".06" filter="url(#mapBlur)"/>`;
+    });
+    // Líneas de referencia (ecuador + meridiano) muy sutiles.
+    html += `<line x1="0" y1="200" x2="800" y2="200" stroke="var(--line)" stroke-width="1" opacity=".5"/>`;
+    html += `<line x1="400" y1="0" x2="400" y2="400" stroke="var(--line)" stroke-width="1" opacity=".5"/>`;
+
+    Object.keys(conteo).forEach(key=>{
+      const coords = ORIGENES_COORDS[key];
+      if(!coords) return;
+      const { x, y } = proyectar(coords[0], coords[1]);
+      const n = conteo[key];
+      const radio = 6 + Math.min(10, Math.sqrt(n) * 4);
+      const activo = mapaPaisFiltro === key;
+      html += `<circle class="map-marker${activo ? ' active' : ''}" cx="${x}" cy="${y}" r="${radio}" fill="var(--holo-1)" opacity=".85" data-pais-key="${esc(key)}"/>`;
+    });
+    svg.innerHTML = defs + html;
+
+    svg.querySelectorAll('.map-marker').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const key = el.dataset.paisKey;
+        mapaPaisFiltro = (mapaPaisFiltro === key) ? null : key;
+        renderMapaMundial();
+        mostrarDetalleMapa(key, conteo[key] || 0);
+        if(mapaPaisFiltro) renderFichasCafe(mapaPaisFiltro);
+        else renderFichasCafe();
+      });
+    });
+  }
+
+  function mostrarDetalleMapa(key, cantidad){
+    const card = document.getElementById('cafeMapDetailCard');
+    if(mapaPaisFiltro === null){ card.style.display = 'none'; return; }
+    const nombreOrigen = cafes.find(c=>normalizarPais(c.t) === key);
+    card.style.display = 'block';
+    document.getElementById('cafeMapDetailPais').textContent = nombreOrigen ? nombreOrigen.t : key.charAt(0).toUpperCase()+key.slice(1);
+    document.getElementById('cafeMapDetailDesc').textContent = nombreOrigen ? nombreOrigen.d : 'Origen productor de café con fichas cargadas por la comunidad.';
+    document.getElementById('cafeMapDetailCount').textContent = `${cantidad} ficha${cantidad===1?'':'s'} de la comunidad desde acá`;
+  }
+
+  async function renderFichasCafe(filtroPais){
+    const list = document.getElementById('fichasCafeList');
+    let coffees = mapaCoffeesCache.length ? mapaCoffeesCache : [];
+    if(!coffees.length){
+      try{ coffees = await apiFetch('/coffees'); mapaCoffeesCache = coffees; }
+      catch(e){ list.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
+    }
+    const filtradas = filtroPais ? coffees.filter(c=> normalizarPais(c.pais) === filtroPais) : coffees;
+    if(filtradas.length === 0){
+      list.innerHTML = filtroPais
+        ? '<p class="empty-note">Todavía no hay fichas de ese país.</p>'
+        : '<p class="empty-note">Todavía no hay fichas publicadas por la comunidad.</p>';
       return;
     }
-    list.innerHTML = coffees.map(c=>`
+    list.innerHTML = filtradas.map(c=>`
       <div class="card article-card">
         <p class="a-title">${esc(c.nombre)}</p>
         <p class="card-sub" style="margin-bottom:6px;">${esc([c.pais, c.region, c.variedad, c.proceso].filter(Boolean).join(' · ')) || 'Sin datos de origen'}</p>
@@ -2466,6 +2602,18 @@
 
   document.getElementById('adminResetDataBtn').addEventListener('click', async ()=>{
     toast('Este botón borraba datos locales del demo offline. Con el backend conectado, tus extracciones y recetas ya viven en la base de datos real y no se borran desde acá.');
+  });
+
+  document.getElementById('anuncioBtn').addEventListener('click', async ()=>{
+    const textarea = document.getElementById('anuncioTexto');
+    const mensaje = textarea.value.trim();
+    if(!mensaje){ toast('Escribí el mensaje del anuncio primero.'); return; }
+    if(!confirm('¿Enviar este anuncio a todos los usuarios registrados?')) return;
+    try{
+      await apiFetch('/notifications/anuncio', { method:'POST', body: JSON.stringify({ mensaje }) });
+      textarea.value = '';
+      toast('Anuncio enviado a todos los usuarios.');
+    }catch(e){ toast('No se pudo enviar: ' + e.message); }
   });
 
   // ---------- PERFIL ----------

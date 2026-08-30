@@ -1,4 +1,5 @@
 const prisma = require('../prismaClient');
+const { crearNotificacion, crearNotificacionMasiva } = require('./notifications.controller');
 
 async function listar(req, res, next) {
   try {
@@ -21,8 +22,19 @@ async function crear(req, res, next) {
         authorId: req.user.sub,
         nombre, metodo, cafe, molienda, dosisG, aguaG, temperaturaC, ratio, tiempoSeg, pasos, notas,
       },
+      include: { author: { select: { username: true } } },
     });
     res.status(201).json(recipe);
+    // Solo se avisa de recetas nuevas de verdad (versión 1) — duplicar
+    // una receta ya notifica al autor original por su cuenta, y no
+    // hace falta spamear a todos por cada versión editada.
+    if (recipe.version === 1) {
+      await crearNotificacionMasiva({
+        tipo: 'receta_nueva',
+        mensaje: `@${recipe.author.username} publicó una receta nueva: "${recipe.nombre}"`,
+        excluirUserId: req.user.sub,
+      });
+    }
   } catch (e) { next(e); }
 }
 
@@ -52,6 +64,13 @@ async function duplicar(req, res, next) {
       },
     });
     res.status(201).json(nueva);
+    if (original.authorId !== req.user.sub) {
+      await crearNotificacion({
+        userId: original.authorId,
+        tipo: 'receta_duplicada',
+        mensaje: `Alguien duplicó tu receta "${original.nombre}" para modificarla.`,
+      });
+    }
   } catch (e) { next(e); }
 }
 

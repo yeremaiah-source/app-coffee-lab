@@ -17,6 +17,7 @@ model User {
   id                 String    @id @default(uuid())
   username           String    @unique
   email              String?   @unique
+  avatarUrl          String?
   passwordHash       String
   role               Role      @default(usuario)
   createdAt          DateTime  @default(now())
@@ -28,6 +29,43 @@ model User {
   coffees        Coffee[]
   communityPosts CommunityPost[]
   comments       Comment[]
+  loginEvents    LoginEvent[]
+  notifications  Notification[]
+}
+
+// Registro de accesos — usado por el panel de administrador para ver
+// actividad de inicios de sesión (fecha, IP, dispositivo).
+model LoginEvent {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+// Auditoría de acciones administrativas sensibles: quién hizo qué y
+// cuándo. Nunca guarda contraseñas ni tokens, solo una descripción de
+// la acción.
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  adminId       String
+  adminUsername String
+  accion        String
+  detalle       String?
+  createdAt     DateTime @default(now())
+}
+
+// Notificaciones reales: se generan cuando alguien comenta tu
+// publicación o duplica una receta tuya.
+model Notification {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  tipo      String
+  mensaje   String
+  leida     Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model Extraction {
@@ -118,6 +156,7 @@ model CommunityPost {
   user         User       @relation(fields: [userId], references: [id])
   userId       String
   descripcion  String?
+  fotoUrl      String?
   createdAt    DateTime   @default(now())
 
   comments Comment[]

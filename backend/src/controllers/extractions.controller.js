@@ -4,7 +4,7 @@ const { estimateTDS, registrarMedicionReal } = require('../utils/tdsEstimator');
 
 async function crear(req, res, next) {
   try {
-    const { metodo, cafe, molienda, dosisG, aguaG, tiempoSeg, temperaturaC, tds, tueste, notas } = req.body;
+    const { metodo, cafe, molienda, dosisG, aguaG, tiempoSeg, temperaturaC, tds, tueste, notas, dulzor, acidez, cuerpo, amargor } = req.body;
 
     // Validación estricta del lado del servidor — nunca se confía en que
     // el frontend ya validó. Rechaza tipos incorrectos, negativos, cero,
@@ -26,6 +26,13 @@ async function crear(req, res, next) {
     }
     if (tds !== undefined && tds !== null && (typeof tds !== 'number' || tds <= 0 || tds > 30)) {
       return res.status(400).json({ error: 'El TDS medido tiene que ser un número entre 0 y 30%.' });
+    }
+    // Evaluación sensorial: escala 1-10, siempre opcional.
+    const camposSensoriales = { dulzor, acidez, cuerpo, amargor };
+    for (const [campo, valor] of Object.entries(camposSensoriales)) {
+      if (valor !== undefined && valor !== null && (typeof valor !== 'number' || valor < 1 || valor > 10)) {
+        return res.status(400).json({ error: `El campo ${campo} tiene que ser un número entre 1 y 10.` });
+      }
     }
 
     let tdsFinal = tds || null;
@@ -71,6 +78,10 @@ async function crear(req, res, next) {
         categoria: analisis.categoria,
         recomendacion: analisis.recomendacion,
         notas: notas || null,
+        dulzor: dulzor || null,
+        acidez: acidez || null,
+        cuerpo: cuerpo || null,
+        amargor: amargor || null,
       },
     });
     res.status(201).json(extraction);

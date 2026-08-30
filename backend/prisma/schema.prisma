@@ -110,6 +110,10 @@ model Extraction {
   categoria           String?
   recomendacion       String?
   notas               String?
+  dulzor              Int?
+  acidez              Int?
+  cuerpo              Int?
+  amargor             Int?
   createdAt           DateTime @default(now())
 
   communityPost CommunityPost?

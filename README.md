@@ -328,6 +328,27 @@ entender → mejorar":
 - Fichas de café con historial de extracciones asociadas.
 - Parámetros planificados vs. ejecutados en el registro de extracción.
 
+## Gráficos de perfil sensorial y rango ideal
+
+Basado en la imagen de referencia que pasaste (radar + barras de rango).
+
+- ✅ **Evaluación sensorial al registrar una extracción**: 4 sliders
+  opcionales (Dulzor, Acidez, Cuerpo, Amargor, escala 1-10) — solo se
+  guardan si tocás alguno, nunca obligatorio. Nuevos campos en
+  `Extraction` (`dulzor`, `acidez`, `cuerpo`, `amargor`).
+- ✅ **Radar de perfil de extracción** en Análisis: promedia tus
+  últimas 7 evaluaciones sensoriales cargadas en un gráfico de 5 ejes
+  (los 4 que cargás + "Balance", un valor derivado — no cargado por
+  vos — que mide qué tan parejos están los otros cuatro entre sí).
+  Solo aparece si cargaste al menos una evaluación sensorial.
+- ✅ **Barras de rango ideal (Golden Cup)**: el EY de tu última
+  extracción posicionado dentro del rango objetivo 18-22%, y (cuando
+  el TDS fue estimado, no medido) el TDS dentro del rango de confianza
+  de esa estimación puntual — nunca se presenta como un "rango ideal
+  universal de TDS", porque ese rango varía según el método.
+
+**Esta ronda requiere migración** (4 campos nuevos en `Extraction`).
+
 ## Laboratorio de experimentos
 
 - ✅ **Módulo de experimentación completo**: nueva tabla `Experimento`

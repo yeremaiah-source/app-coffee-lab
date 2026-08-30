@@ -249,6 +249,12 @@
   input:focus, textarea:focus{outline:none; border-color:var(--purple);}
   textarea{resize:vertical; min-height:60px;}
   .field{margin-bottom:14px;}
+  .sensory-slider-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .sensory-slider-label{width:58px; font-size:12px; color:var(--text-dim); flex-shrink:0;}
+  .sensory-slider{flex:1; -webkit-appearance:none; appearance:none; height:4px; border-radius:4px; background:var(--line); outline:none;}
+  .sensory-slider::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:linear-gradient(100deg, var(--holo-1), var(--holo-2)); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.4);}
+  .sensory-slider::-moz-range-thumb{width:16px; height:16px; border-radius:50%; border:none; background:linear-gradient(100deg, var(--holo-1), var(--holo-2)); cursor:pointer;}
+  .sensory-slider-value{width:20px; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--purple-2); flex-shrink:0;}
   .field-row{display:flex; gap:12px;}
   .field-row .field{flex:1;}
 
@@ -662,6 +668,30 @@
             <option value="oscuro">Oscuro</option>
           </select>
         </div>
+        <div class="field" style="margin-top:10px;">
+          <label>Evaluación sensorial (opcional, 1-10)</label>
+          <div class="sensory-slider-row">
+            <span class="sensory-slider-label">Dulzor</span>
+            <input type="range" id="rDulzor" min="1" max="10" value="5" class="sensory-slider">
+            <span class="sensory-slider-value" id="rDulzorVal">5</span>
+          </div>
+          <div class="sensory-slider-row">
+            <span class="sensory-slider-label">Acidez</span>
+            <input type="range" id="rAcidez" min="1" max="10" value="5" class="sensory-slider">
+            <span class="sensory-slider-value" id="rAcidezVal">5</span>
+          </div>
+          <div class="sensory-slider-row">
+            <span class="sensory-slider-label">Cuerpo</span>
+            <input type="range" id="rCuerpo" min="1" max="10" value="5" class="sensory-slider">
+            <span class="sensory-slider-value" id="rCuerpoVal">5</span>
+          </div>
+          <div class="sensory-slider-row">
+            <span class="sensory-slider-label">Amargor</span>
+            <input type="range" id="rAmargor" min="1" max="10" value="5" class="sensory-slider">
+            <span class="sensory-slider-value" id="rAmargorVal">5</span>
+          </div>
+          <p class="card-sub" id="rSensorialActivo" style="font-size:11px; color:var(--text-faint); margin-top:2px;">Movés cualquiera de estas escalas para incluir tu evaluación sensorial.</p>
+        </div>
         <div class="field">
           <label for="rNotas">Notas</label>
           <textarea id="rNotas" placeholder="Frutal, floral, cítrico..."></textarea>
@@ -682,6 +712,18 @@
       </div>
       <p class="hint">Basado en tu extracción más reciente.</p>
       <div class="card" id="analisisCard"></div>
+
+      <div class="card" id="radarSensorialCard" style="display:none;">
+        <p class="eyebrow">Perfil de extracción</p>
+        <p class="card-sub" style="margin-bottom:8px;">Promedio de tus últimas evaluaciones sensoriales cargadas.</p>
+        <svg id="radarSensorial" viewBox="0 0 260 240" width="100%" style="display:block; margin:0 auto;"></svg>
+      </div>
+
+      <div class="card" id="gaugesGoldenCupCard" style="display:none;">
+        <p class="eyebrow">Rango ideal (Golden Cup)</p>
+        <div id="gaugesGoldenCup"></div>
+      </div>
+
       <div class="card">
         <p class="eyebrow">Extracción en el tiempo</p>
         <svg id="analisisChart" viewBox="0 0 300 130" width="100%" height="130"></svg>
@@ -1474,6 +1516,17 @@
   }
   document.getElementById('btConnectBtn').addEventListener('click', connectBluetoothRefractometer);
 
+  let sensorialTocado = false;
+  ['rDulzor','rAcidez','rCuerpo','rAmargor'].forEach(id=>{
+    const slider = document.getElementById(id);
+    const valSpan = document.getElementById(id + 'Val');
+    slider.addEventListener('input', ()=>{
+      valSpan.textContent = slider.value;
+      sensorialTocado = true;
+      document.getElementById('rSensorialActivo').textContent = 'Se va a guardar tu evaluación sensorial con esta extracción.';
+    });
+  });
+
   document.getElementById('saveRegBtn').addEventListener('click', async ()=>{
     if(!sessionUser){ toast('Iniciá sesión para guardar extracciones.'); return; }
     const dosis = parseFloat(rDosis.value);
@@ -1497,11 +1550,21 @@
         tds: parseFloat(document.getElementById('rTds').value) || undefined,
         tueste: document.getElementById('rTueste').value || undefined,
         notas: notas || undefined,
+        dulzor: sensorialTocado ? parseInt(document.getElementById('rDulzor').value) : undefined,
+        acidez: sensorialTocado ? parseInt(document.getElementById('rAcidez').value) : undefined,
+        cuerpo: sensorialTocado ? parseInt(document.getElementById('rCuerpo').value) : undefined,
+        amargor: sensorialTocado ? parseInt(document.getElementById('rAmargor').value) : undefined,
       })});
       ['rCafe','rMolinillo','rDosis','rRendimiento','rTiempo','rTemp','rTds','rNotas'].forEach(id=>{
         document.getElementById(id).value = '';
       });
       document.getElementById('rTueste').value = '';
+      ['rDulzor','rAcidez','rCuerpo','rAmargor'].forEach(id=>{
+        document.getElementById(id).value = 5;
+        document.getElementById(id + 'Val').textContent = '5';
+      });
+      sensorialTocado = false;
+      document.getElementById('rSensorialActivo').textContent = 'Movés cualquiera de estas escalas para incluir tu evaluación sensorial.';
       document.getElementById('tdsPreviewBox').style.display = 'none';
       updateRatioLive();
       toast('Extracción guardada');
@@ -1510,6 +1573,103 @@
       showView('analisis');
     }catch(e){ toast('No se pudo guardar: ' + e.message); }
   });
+
+  // ---------- RADAR DE PERFIL SENSORIAL ----------
+  function renderRadarSensorial(){
+    const card = document.getElementById('radarSensorialCard');
+    const svg = document.getElementById('radarSensorial');
+    const conSensorial = extracciones.filter(e => e.dulzor != null && e.acidez != null && e.cuerpo != null && e.amargor != null).slice(0, 7);
+    if(conSensorial.length === 0){
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    const prom = (campo) => conSensorial.reduce((a,e)=>a+e[campo],0) / conSensorial.length;
+    const dulzor = prom('dulzor'), acidez = prom('acidez'), cuerpo = prom('cuerpo'), amargor = prom('amargor');
+    // "Balance" es un valor derivado, no cargado por el usuario: cuanto
+    // más parecidos entre sí sean los otros cuatro valores, más alto.
+    const valores = [dulzor, acidez, cuerpo, amargor];
+    const media = valores.reduce((a,b)=>a+b,0)/valores.length;
+    const desvio = Math.sqrt(valores.reduce((a,v)=>a+Math.pow(v-media,2),0)/valores.length);
+    const balance = Math.max(0, Math.min(10, 10 - desvio*1.4));
+
+    const ejes = [
+      { nombre:'Dulzor', valor: dulzor },
+      { nombre:'Acidez', valor: acidez },
+      { nombre:'Cuerpo', valor: cuerpo },
+      { nombre:'Amargor', valor: amargor },
+      { nombre:'Balance', valor: balance },
+    ];
+    const cx = 130, cy = 120, rMax = 85;
+    const n = ejes.length;
+    function puntoEje(i, valor){
+      const angulo = (Math.PI*2 * i / n) - Math.PI/2;
+      const r = (valor/10) * rMax;
+      return { x: cx + r*Math.cos(angulo), y: cy + r*Math.sin(angulo) };
+    }
+    let html = '';
+    // Anillos de referencia (2,4,6,8,10)
+    [2,4,6,8,10].forEach(nivel=>{
+      const pts = ejes.map((_,i)=> puntoEje(i, nivel));
+      html += `<polygon points="${pts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="var(--line)" stroke-width="1" opacity=".5"/>`;
+    });
+    // Ejes
+    ejes.forEach((eje,i)=>{
+      const p = puntoEje(i, 10);
+      html += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="var(--line)" stroke-width="1" opacity=".5"/>`;
+      const label = puntoEje(i, 12.5);
+      html += `<text x="${label.x}" y="${label.y}" text-anchor="middle" font-size="10" font-family="Archivo" fill="var(--text-dim)">${esc(eje.nombre)}</text>`;
+      const valLabel = puntoEje(i, 11.8);
+      html += `<text x="${valLabel.x}" y="${valLabel.y+11}" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="var(--purple-2)">${eje.valor.toFixed(1)}</text>`;
+    });
+    // Polígono de datos
+    const puntosDatos = ejes.map((eje,i)=> puntoEje(i, eje.valor));
+    html += `<polygon points="${puntosDatos.map(p=>p.x+','+p.y).join(' ')}" fill="var(--holo-2)" fill-opacity=".22" stroke="var(--holo-2)" stroke-width="2"/>`;
+    puntosDatos.forEach(p=>{ html += `<circle cx="${p.x}" cy="${p.y}" r="3" fill="var(--holo-1)"/>`; });
+
+    svg.innerHTML = html;
+  }
+
+  // ---------- BARRAS DE RANGO IDEAL (GOLDEN CUP) ----------
+  function renderGaugesGoldenCup(){
+    const card = document.getElementById('gaugesGoldenCupCard');
+    const cont = document.getElementById('gaugesGoldenCup');
+    if(extracciones.length === 0){ card.style.display = 'none'; return; }
+    const last = extracciones[0];
+    if((last.ey == null) && !(last.tdsEstimado && last.tdsRangoMin != null)){
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    let html = '';
+
+    function gauge(titulo, valor, min, max, unidad){
+      const pos = Math.max(0, Math.min(100, ((valor - min) / (max - min)) * 100));
+      return `
+        <div style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span class="card-sub">${esc(titulo)}</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--purple-2);">${valor.toFixed(2)}${unidad}</span>
+          </div>
+          <div style="position:relative; height:8px; border-radius:4px; background:linear-gradient(90deg, var(--holo-1), var(--holo-2), var(--holo-3)); opacity:.35;"></div>
+          <div style="position:relative; margin-top:-8px; height:8px;">
+            <div style="position:absolute; left:${pos}%; top:-3px; transform:translateX(-50%); width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.5);"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:4px;">
+            <span class="card-sub" style="font-size:10.5px;">${min}${unidad}</span>
+            <span class="card-sub" style="font-size:10.5px;">${max}${unidad}</span>
+          </div>
+        </div>`;
+    }
+
+    if(last.ey != null){
+      html += gauge('Extracción (EY) — objetivo Golden Cup', last.ey, 18, 22, '%');
+    }
+    if(last.tdsEstimado && last.tdsRangoMin != null && last.tdsRangoMax != null){
+      html += gauge('TDS — rango estimado para esta extracción', last.tds, last.tdsRangoMin, last.tdsRangoMax, '%');
+    }
+    cont.innerHTML = html;
+  }
 
   // ---------- ANALISIS ----------
   function renderAnalisis(){
@@ -1531,6 +1691,8 @@
         ${last.tdsEstimado ? `<p class="card-sub" style="font-size:11px; color:var(--text-faint); margin-top:10px;">TDS estimado estadísticamente (rango ${last.tdsRangoMin}–${last.tdsRangoMax}%, confianza ${last.tdsConfianzaLabel}). No reemplaza la medición con refractómetro — cuando midas con uno, el motor se recalibra solo.</p>` : ''}`;
     }
     // chart
+    renderRadarSensorial();
+    renderGaugesGoldenCup();
     const withEY = extracciones.filter(e => e.ey !== null && e.ey !== undefined).slice(0, 10).reverse();
     const svg = document.getElementById('analisisChart');
     const emptyNote = document.getElementById('chartEmptyNote');

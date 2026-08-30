@@ -24,6 +24,8 @@ model User {
   resetToken         String?   @unique
   resetTokenExpires  DateTime?
   tokenVersion       Int       @default(0)
+  intentosFallidos   Int       @default(0)
+  bloqueadoHasta     DateTime?
 
   extractions    Extraction[]
   recipes        Recipe[]

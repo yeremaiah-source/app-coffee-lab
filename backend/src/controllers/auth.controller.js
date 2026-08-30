@@ -39,8 +39,31 @@ async function login(req, res, next) {
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user) return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
 
+    // Bloqueo por cuenta (no por IP): protege contra fuerza bruta
+    // distribuida entre muchas IPs distintas, algo que el rate
+    // limiting general no puede frenar por sí solo.
+    if (user.bloqueadoHasta && user.bloqueadoHasta > new Date()) {
+      const minutosRestantes = Math.ceil((user.bloqueadoHasta.getTime() - Date.now()) / 60000);
+      return res.status(423).json({ error: `Cuenta bloqueada temporalmente por demasiados intentos fallidos. Probá de nuevo en ${minutosRestantes} minuto${minutosRestantes===1?'':'s'}.` });
+    }
+
     const ok = await verifyPassword(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+    if (!ok) {
+      const intentos = user.intentosFallidos + 1;
+      const LIMITE_INTENTOS = 5;
+      const data = { intentosFallidos: intentos };
+      if (intentos >= LIMITE_INTENTOS) {
+        data.bloqueadoHasta = new Date(Date.now() + 15 * 60 * 1000);
+        data.intentosFallidos = 0;
+      }
+      await prisma.user.update({ where: { id: user.id }, data });
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+    }
+
+    // Login correcto: se limpia cualquier contador de intentos fallidos.
+    if (user.intentosFallidos > 0 || user.bloqueadoHasta) {
+      await prisma.user.update({ where: { id: user.id }, data: { intentosFallidos: 0, bloqueadoHasta: null } });
+    }
 
     const token = signToken(user);
     res.json({ token, user: { id: user.id, username: user.username, role: user.role, avatarUrl: user.avatarUrl } });

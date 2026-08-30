@@ -36,4 +36,36 @@ async function crearNotificacion({ userId, tipo, mensaje }) {
   await prisma.notification.create({ data: { userId, tipo, mensaje } });
 }
 
-module.exports = { listar, marcarLeida, marcarTodasLeidas, crearNotificacion };
+// Notificación masiva: le llega a todos los usuarios registrados menos
+// (opcionalmente) uno solo, en una sola operación en vez de una por
+// usuario — se usa para "alguien publicó una receta nueva" y para los
+// anuncios de novedades que manda un administrador.
+async function crearNotificacionMasiva({ tipo, mensaje, excluirUserId }) {
+  const usuarios = await prisma.user.findMany({
+    where: excluirUserId ? { id: { not: excluirUserId } } : undefined,
+    select: { id: true },
+  });
+  if (usuarios.length === 0) return;
+  await prisma.notification.createMany({
+    data: usuarios.map(u => ({ userId: u.id, tipo, mensaje })),
+  });
+}
+
+// Endpoint: un administrador anuncia una novedad de la app a todos los
+// usuarios registrados (nueva función, cambio importante, etc.).
+async function anunciar(req, res, next) {
+  try {
+    const { mensaje } = req.body;
+    if (!mensaje || !mensaje.trim()) {
+      return res.status(400).json({ error: 'El mensaje del anuncio no puede estar vacío.' });
+    }
+    await crearNotificacionMasiva({
+      tipo: 'anuncio',
+      mensaje: mensaje.trim(),
+      excluirUserId: req.user.sub,
+    });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+}
+
+module.exports = { listar, marcarLeida, marcarTodasLeidas, crearNotificacion, crearNotificacionMasiva, anunciar };

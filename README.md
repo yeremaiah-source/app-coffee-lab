@@ -292,6 +292,48 @@ versiones viejas instaladas aunque el archivo diga las nuevas.
   mapas, y arranca siempre con los 4 orígenes de la guía curada
   visibles aunque todavía no haya fichas reales cargadas.
 
+## Motor de consistencia e Insights (primera parte del roadmap grande)
+
+Recibimos un documento muy ambicioso (rediseño completo en 3 modos,
+laboratorio de experimentos, búsqueda global, historial causal, etc.).
+Es demasiado grande para una sola ronda — se avisó explícitamente y se
+construyó la parte de mayor valor real primero, siguiendo el propio
+principio del documento de "registrar → comparar → detectar →
+entender → mejorar":
+
+- ✅ **Consistencia del barista** (`GET /api/extractions/consistencia`):
+  se calcula con el coeficiente de variación (desvío/promedio) de
+  dosis, ratio y tiempo entre tus últimas 20 extracciones — un puntaje
+  de 0 a 100 basado en variables objetivas ya registradas, nunca un
+  número arbitrario. Si hay menos de 3 extracciones, dice
+  explícitamente "no hay suficientes datos" en vez de inventar un
+  puntaje.
+- ✅ **Insights basados en evidencia** (`GET /api/extractions/insights`):
+  compara tu mejor extracción contra tu peor (la más y la menos
+  cercana al 20% EY ideal) y muestra las diferencias reales en dosis,
+  agua, tiempo, temperatura y molienda — con lenguaje de correlación
+  ("coincide con"), nunca de causalidad comprobada. También calcula
+  qué molienda aparece más seguido en tus extracciones balanceadas.
+  Cada sección tiene su propio mensaje de "datos insuficientes" si
+  corresponde — la app nunca inventa una conclusión sin evidencia
+  real detrás.
+- ✅ Nueva pantalla "Insights" en Explorar, con las tres secciones de
+  arriba.
+
+### Lo que queda pendiente de ese documento (para las próximas rondas)
+- Los 3 modos de dashboard (Operación / Profesional / Laboratorio).
+- Comparación visual lado a lado de 2+ extracciones elegidas a mano
+  (hoy el backend `/api/extractions/comparar` ya soporta esto, falta
+  la pantalla).
+- Versionado visual de recetas (v1, v2, v3 con comparación entre
+  versiones) — el modelo de datos ya soporta versiones
+  (`parentRecipeId`), falta la UI de comparación.
+- Fichas de café con historial de extracciones asociadas.
+- Módulo de laboratorio/experimentos (hipótesis → variable → resultado
+  → conclusión).
+- Búsqueda global.
+- Parámetros planificados vs. ejecutados en el registro de extracción.
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

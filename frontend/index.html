@@ -536,6 +536,10 @@
             <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg></span></div>
             <div class="t">Aromas y sabores</div>
           </div>
+          <div class="grid-tile" data-nav="insights">
+            <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14h7l-1 8 9-12h-7z"/></svg></span></div>
+            <div class="t">Insights</div>
+          </div>
           <div class="grid-tile" data-nav="papers">
             <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></span></div>
             <div class="t">Papers científicos</div>
@@ -568,6 +572,10 @@
         <div class="grid-tile" data-nav="aromas">
           <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg></span></div>
           <div class="t">Aromas y sabores</div>
+        </div>
+        <div class="grid-tile" data-nav="insights">
+          <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14h7l-1 8 9-12h-7z"/></svg></span></div>
+          <div class="t">Insights</div>
         </div>
         <div class="grid-tile" data-nav="papers">
           <div class="icon-wrap"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></span></div>
@@ -798,6 +806,16 @@
       </div>
       <p class="hint">Concepto → variables → evidencia → aplicación práctica.</p>
       <div id="cienciaList"></div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div class="view" id="view-insights">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="explorar"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Insights</h1>
+      </div>
+      <p class="hint">Basado en tus propios datos registrados. Si algo no tiene suficiente evidencia, te lo decimos directamente en vez de inventar.</p>
+      <div id="insightsContent"></div>
     </div>
 
     <!-- AROMAS Y SABORES -->
@@ -1133,7 +1151,7 @@
   let recetasCustom = [];
 
   // ---------- Navigation ----------
-  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad' };
+  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad' };
   const navTabs = ['inicio','explorar','registro','comunidad','perfil'];
 
   function showView(name){
@@ -1148,6 +1166,7 @@
     if(name === 'admin') renderAdmin();
     if(name === 'comunidad') renderComunidad();
     if(name === 'cafes'){ mapaPaisFiltro = null; renderMapaMundial(); renderFichasCafe(); }
+    if(name === 'insights') renderInsights();
     window.scrollTo(0,0);
   }
   document.querySelectorAll('[data-nav]').forEach(el=>{
@@ -1428,6 +1447,70 @@
       ${dots}
       <text x="2" y="${yFor(max)+4}" font-size="9" fill="#655D80">${max}%</text>
       <text x="2" y="${yFor(min)+4}" font-size="9" fill="#655D80">${min}%</text>`;
+  }
+
+  // ---------- INSIGHTS ----------
+  async function renderInsights(){
+    const cont = document.getElementById('insightsContent');
+    cont.innerHTML = '<p class="empty-note">Cargando...</p>';
+    let data;
+    try{ data = await apiFetch('/extractions/insights'); }
+    catch(e){ cont.innerHTML = '<p class="empty-note">No se pudo conectar con el servidor.</p>'; return; }
+
+    let html = '';
+
+    // Consistencia
+    html += `<div class="card">
+      <p class="eyebrow">Consistencia</p>`;
+    if(data.consistencia.suficientesDatos){
+      const colorScore = data.consistencia.score >= 65 ? 'var(--green)' : 'var(--red)';
+      html += `
+        <div style="display:flex; align-items:baseline; gap:10px;">
+          <span style="font-family:'Bungee',sans-serif; font-size:32px; color:${colorScore};">${data.consistencia.score}</span>
+          <span class="card-sub">/ 100 · ${esc(data.consistencia.label)}</span>
+        </div>
+        <p class="card-sub" style="margin-top:8px;">Calculado sobre tus últimas ${data.consistencia.muestras} extracciones, según cuánto varían estas variables entre sí:</p>
+        <div class="sci-vars" style="margin-top:8px;">
+          ${data.consistencia.variables.map(v=>`<span class="sci-var-chip">${esc(v.nombre)}: ±${v.variacionPorcentual}%</span>`).join('')}
+        </div>`;
+    } else {
+      html += `<p class="empty-note" style="text-align:left; padding:0;">${esc(data.consistencia.mensaje)}</p>`;
+    }
+    html += `</div>`;
+
+    // Mejor vs peor
+    html += `<div class="card">
+      <p class="eyebrow">Tu mejor vs. tu peor extracción</p>`;
+    if(data.comparacionMejorPeor.suficientesDatos){
+      const { mejor, peor, diferencias } = data.comparacionMejorPeor;
+      html += `
+        <div class="stat-row">
+          <div class="stat"><div class="k">Mejor (EY)</div><div class="v" style="color:var(--green);">${mejor.ey.toFixed(1)}%</div></div>
+          <div class="stat"><div class="k">Peor (EY)</div><div class="v" style="color:var(--red);">${peor.ey.toFixed(1)}%</div></div>
+        </div>
+        ${diferencias.length ? `
+          <p class="card-sub" style="margin-top:10px; margin-bottom:6px;">Principales diferencias (coinciden con el resultado, no implican causa comprobada):</p>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            ${diferencias.map(d=> d.mejor ? `<p class="card-sub">· ${esc(d.nombre)}: <b>${esc(d.mejor)}</b> en la mejor vs. <b>${esc(d.peor)}</b> en la peor</p>` : `<p class="card-sub">· ${esc(d.nombre)}: ${d.diferencia > 0 ? '+' : ''}${d.diferencia}${esc(d.unidad)} en la mejor respecto a la peor</p>`).join('')}
+          </div>` : '<p class="card-sub" style="margin-top:8px;">No se encontraron diferencias relevantes en los datos registrados entre ambas.</p>'}`;
+    } else {
+      html += `<p class="empty-note" style="text-align:left; padding:0;">${esc(data.comparacionMejorPeor.mensaje)}</p>`;
+    }
+    html += `</div>`;
+
+    // Molienda frecuente
+    html += `<div class="card">
+      <p class="eyebrow">Molienda más frecuente en tus extracciones balanceadas</p>`;
+    if(data.moliendaFrecuente.suficientesDatos){
+      html += `
+        <p class="card-title" style="font-size:16px;">${esc(data.moliendaFrecuente.molienda)}</p>
+        <p class="card-sub" style="margin-top:4px;">Aparece en ${data.moliendaFrecuente.veces} de tus ${data.moliendaFrecuente.totalBalanceadas} extracciones balanceadas (Golden Cup) — una correlación observada, no una receta garantizada para cualquier café.</p>`;
+    } else {
+      html += `<p class="empty-note" style="text-align:left; padding:0;">${esc(data.moliendaFrecuente.mensaje)}</p>`;
+    }
+    html += `</div>`;
+
+    cont.innerHTML = html;
   }
 
   // ---------- RECETAS ----------

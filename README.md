@@ -147,14 +147,6 @@ migra y qué se reconstruye.
   `npx prisma migrate dev --name <nombre-descriptivo>` para que tu base
   de Neon quede sincronizada.
 
-### Para probar el frontend contra tu backend local
-
-1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).
-2. Abrí `frontend/index.html` directamente en el navegador (doble clic).
-3. Si el backend corre en otro puerto o ya lo desplegaste en Render,
-   cambiá la constante `API_BASE` al principio del `<script>` del
-   frontend.
-
 ## Informe de auditoría y hardening (esta ronda)
 
 **Nada se borró ni se rompió** — todo lo listado abajo se agregó sobre
@@ -245,12 +237,34 @@ lo que ya funcionaba, sin tocar datos existentes.
   extracciones compartió cada uno — tocando a cualquiera se abre su
   perfil público. Vía `GET /api/users/directorio` (público, no expone
   email ni rol).
-  una de las 7 recetas base se reescribió después de chequear
-  estándares vigentes de la SCA y tendencias de competencias recientes
-  (no de memoria) — el Golden Cup Standard oficial (55g/L ±10%, TDS
-  1.15–1.35%, extracción 18–22%, calidad de agua incluida), la
-  tendencia de shots cada vez más cortos en el Mundial de Baristas
-  2025, la receta de V60 de James Hoffmann (la más referenciada hoy) y
-  la variante de molienda extra gruesa que Tetsu Kasuya presentó en
-  2026, y los rangos de ratio que la SCA recomienda para prensa
-  francesa y cold brew (concentrado vs. listo para tomar).
+
+## Revisión de vulnerabilidades en dependencias
+
+Verificado contra fuentes actuales (avisos de seguridad publicados),
+no de memoria. Se encontraron y corrigieron **tres problemas reales**:
+
+- **`multer` 1.4.5-lts.1 → 2.0.2**: versión vulnerable a denegación de
+  servicio (CVE-2025-47935, CVE-2025-47944, CVE-2025-7338, severidad
+  alta) — un archivo mal formado en `/api/uploads/*` podía tumbar el
+  proceso. Nuestro uso (memoria, filtro de tipo, límite de tamaño) es
+  compatible con la v2 sin cambios de código.
+- **`express` 4.19.2 → 4.21.2**: 7 vulnerabilidades conocidas en
+  dependencias internas (`path-to-regexp`, `body-parser`, `cookie`,
+  entre otras), la más grave de severidad 7.5.
+- **Verificación de JWT sin algoritmo fijo**: se agregó
+  `algorithms: ['HS256']` explícito tanto al firmar como al verificar
+  el token (`backend/src/utils/jwt.js`), para blindar contra ataques
+  de "confusión de algoritmo" (una clase de vulnerabilidad JWT
+  activamente reportada).
+
+**Antes de actualizar en tu compu**, corré `npm install` en `backend/`
+después de reemplazar el `package.json` — sin eso, seguís con las
+versiones viejas instaladas aunque el archivo diga las nuevas.
+
+### Para probar el frontend contra tu backend local
+
+1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).
+2. Abrí `frontend/index.html` directamente en el navegador (doble clic).
+3. Si el backend corre en otro puerto o ya lo desplegaste en Render,
+   cambiá la constante `API_BASE` al principio del `<script>` del
+   frontend.

@@ -23,6 +23,7 @@ model User {
   createdAt          DateTime  @default(now())
   resetToken         String?   @unique
   resetTokenExpires  DateTime?
+  tokenVersion       Int       @default(0)
 
   extractions    Extraction[]
   recipes        Recipe[]

@@ -3230,7 +3230,12 @@
     }
   });
 
-  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    // Le avisamos al servidor para que invalide el token de verdad
+    // (incrementa tokenVersion) — no alcanza con borrarlo solo acá.
+    // Si el pedido falla (sin conexión, etc.) igual cerramos sesión
+    // localmente, para no dejar a nadie trabado sin poder salir.
+    try{ await apiFetch('/auth/logout', { method:'POST' }); }catch(e){}
     clearSession();
     sessionUser = null;
     document.getElementById('authGate').classList.remove('hide');
@@ -3358,7 +3363,13 @@
       await apiFetch('/auth/password', { method:'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
       document.getElementById('perfilCurrentPass').value = '';
       document.getElementById('perfilNewPass').value = '';
-      toast('Contraseña actualizada.');
+      // Cambiar la contraseña invalida la sesión actual (por seguridad,
+      // del lado del servidor) — hay que volver a iniciar sesión.
+      clearSession();
+      sessionUser = null;
+      document.getElementById('authGate').classList.remove('hide');
+      showAuthPanel('login');
+      toast('Contraseña actualizada. Iniciá sesión de nuevo.');
     }catch(e){ errEl.textContent = e.message; }
   });
 

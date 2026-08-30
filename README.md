@@ -321,7 +321,9 @@ entender → mejorar":
   arriba.
 
 ### Lo que queda pendiente de ese documento (para las próximas rondas)
-- Los 3 modos de dashboard (Operación / Profesional / Laboratorio de UI).
+- Los 3 modos de dashboard (Operación / Profesional / Laboratorio de
+  UI) — se armó una versión pero al usuario no le convenció, se
+  revirtió; queda pendiente repensar el enfoque.
 - Comparación visual lado a lado de 2+ extracciones elegidas a mano
   (hoy el backend `/api/extractions/comparar` ya soporta esto, falta
   la pantalla).

@@ -57,6 +57,16 @@ async function login(req, res, next) {
   } catch (e) { next(e); }
 }
 
+// Logout real: incrementa tokenVersion, así el token actual (y
+// cualquier otro token viejo de otros dispositivos) deja de ser válido
+// de inmediato — no alcanza con que el cliente borre el token solo.
+async function logout(req, res, next) {
+  try {
+    await prisma.user.update({ where: { id: req.user.sub }, data: { tokenVersion: { increment: 1 } } });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+}
+
 async function changePassword(req, res, next) {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -71,8 +81,13 @@ async function changePassword(req, res, next) {
     if (!ok) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
 
     const passwordHash = await hashPassword(newPassword);
-    await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
-    res.json({ ok: true });
+    // Cambiar la contraseña invalida cualquier sesión activa (la
+    // propia incluida) — el frontend te vuelve a pedir login después.
+    const actualizado = await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, tokenVersion: { increment: 1 } },
+    });
+    res.json({ ok: true, tokenVersion: actualizado.tokenVersion });
   } catch (e) { next(e); }
 }
 
@@ -118,10 +133,10 @@ async function resetPassword(req, res, next) {
     const passwordHash = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash, resetToken: null, resetTokenExpires: null },
+      data: { passwordHash, resetToken: null, resetTokenExpires: null, tokenVersion: { increment: 1 } },
     });
     res.json({ ok: true });
   } catch (e) { next(e); }
 }
 
-module.exports = { register, login, changePassword, forgotPassword, resetPassword };
+module.exports = { register, login, changePassword, forgotPassword, resetPassword, logout };

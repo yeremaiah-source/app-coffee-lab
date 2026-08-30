@@ -328,8 +328,20 @@ entender → mejorar":
 - Fichas de café con historial de extracciones asociadas.
 - Módulo de laboratorio/experimentos (hipótesis → variable → resultado
   → conclusión).
-- Búsqueda global.
 - Parámetros planificados vs. ejecutados en el registro de extracción.
+
+## Búsqueda global
+
+- ✅ **Buscador universal**: nuevo ícono de lupa en el topbar (al lado
+  de la campana) que abre una búsqueda que cruza recetas, fichas de
+  café, usuarios, técnicas, ciencia, papers, la guía de cafés por
+  origen, y las categorías/notas de la rueda de aromas — todo desde un
+  solo cuadro de texto, agrupado por tipo de resultado. Tocar cualquier
+  resultado te lleva directo a esa sección (o al perfil de ese usuario,
+  o a esa categoría de la rueda). Es 100% frontend: el contenido
+  estático (técnicas, ciencia, papers, guía de cafés, aromas) ya vive
+  en memoria: solo recetas, fichas de café y usuarios se piden frescos
+  al servidor en el momento de buscar.
 
 ## Versionado visual de recetas (v1, v2, v3...)
 
@@ -344,6 +356,20 @@ entender → mejorar":
   que quieras comparar y la app muestra las diferencias reales (dosis,
   agua, temperatura, tiempo, molienda, ratio) entre esa versión
   anterior y la posterior, más las notas de la versión más nueva.
+
+## Borrar recetas + panel de administrador rediseñado
+
+- ✅ **Borrar recetas**: nuevo endpoint `DELETE /api/recipes/:id` — el
+  autor o cualquier administrador puede borrar una receta (ícono de
+  tacho junto a editar/duplicar/historial). Si un admin borra una
+  receta ajena, queda registrado en la Auditoría, igual que con
+  comentarios y publicaciones.
+- ✅ **Panel de administrador reorganizado en pestañas**: nada de lo
+  que ya funcionaba se sacó — se redistribuyó en 5 pestañas (Resumen,
+  Usuarios, Actividad, Auditoría, Herramientas) en vez de un scroll
+  largo con 6 tarjetas apiladas. "Herramientas" agrupa el anuncio a
+  todos los usuarios y la zona de riesgo, que antes quedaban sueltas
+  al final.
 
 ### Para probar el frontend contra tu backend local
 

@@ -132,4 +132,30 @@ async function historial(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, crear, duplicar, actualizar, historial };
+async function eliminar(req, res, next) {
+  try {
+    const recipe = await prisma.recipe.findUnique({ where: { id: req.params.id }, include: { author: { select: { username: true } } } });
+    if (!recipe) return res.status(404).json({ error: 'Receta no encontrada.' });
+    const esAutor = recipe.authorId === req.user.sub;
+    const esAdmin = req.user.role === 'administrador';
+    if (!esAutor && !esAdmin) {
+      return res.status(403).json({ error: 'No tenés permiso para borrar esta receta.' });
+    }
+    // Si esta receta tiene versiones hijas (fue duplicada por alguien),
+    // esas quedan huérfanas de padre en vez de romperse — Prisma ya lo
+    // permite porque parentRecipeId es opcional.
+    await prisma.recipe.delete({ where: { id: req.params.id } });
+    if (esAdmin && !esAutor) {
+      const { registrarAuditoria } = require('../utils/auditLog');
+      await registrarAuditoria({
+        adminId: req.user.sub,
+        adminUsername: req.user.username,
+        accion: 'moderar_receta',
+        detalle: `Borró la receta "${recipe.nombre}" de @${recipe.author.username}`,
+      });
+    }
+    res.status(204).send();
+  } catch (e) { next(e); }
+}
+
+module.exports = { listar, crear, duplicar, actualizar, historial, eliminar };

@@ -478,17 +478,22 @@
 
   <div class="topbar">
     <div class="logo"><span class="num">1312</span><span class="sub">COFFEE LAB</span></div>
-    <div style="position:relative;">
-      <div class="icon-btn" id="bellBtn">
-        <span class="icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 6-3 8-3 8h18s-3-2-3-8"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span>
-        <span id="bellBadge" style="display:none; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%; background:var(--accent); border:1.5px solid var(--bg);"></span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="icon-btn" id="searchBtn" data-nav="busqueda">
+        <span class="icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
       </div>
-      <div id="notifPanel" style="display:none; position:absolute; top:46px; right:0; width:300px; max-height:400px; overflow-y:auto; background:var(--panel); border:1.5px solid var(--line); border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.5); z-index:20; padding:12px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-          <p class="eyebrow" style="margin:0;">Notificaciones</p>
-          <a id="marcarTodasLeidasBtn" style="font-size:11px; color:var(--holo-2); cursor:pointer;">Marcar todas leídas</a>
+      <div style="position:relative;">
+        <div class="icon-btn" id="bellBtn">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 6-3 8-3 8h18s-3-2-3-8"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></span>
+          <span id="bellBadge" style="display:none; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%; background:var(--accent); border:1.5px solid var(--bg);"></span>
         </div>
-        <div id="notifList"></div>
+        <div id="notifPanel" style="display:none; position:absolute; top:46px; right:0; width:300px; max-height:400px; overflow-y:auto; background:var(--panel); border:1.5px solid var(--line); border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.5); z-index:20; padding:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <p class="eyebrow" style="margin:0;">Notificaciones</p>
+            <a id="marcarTodasLeidasBtn" style="font-size:11px; color:var(--holo-2); cursor:pointer;">Marcar todas leídas</a>
+          </div>
+          <div id="notifList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -829,6 +834,18 @@
       <div id="insightsContent"></div>
     </div>
 
+    <!-- BÚSQUEDA GLOBAL -->
+    <div class="view" id="view-busqueda">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
+        <div class="icon-btn back" data-back="inicio"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
+        <h1 class="greet" style="margin:0;">Buscar</h1>
+      </div>
+      <div class="field">
+        <input type="text" id="busquedaInput" placeholder="Cafés, recetas, usuarios, técnicas, papers...">
+      </div>
+      <div id="busquedaResultados"></div>
+    </div>
+
     <!-- AROMAS Y SABORES -->
     <div class="view" id="view-aromas">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px;">
@@ -1045,41 +1062,59 @@
         <div class="icon-btn back" data-back="perfil"><span class="icon"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span></div>
         <h1 class="greet" style="margin:0;">Administrador</h1>
       </div>
-      <p class="hint">Gestión de usuarios registrados y de los datos guardados en este dispositivo.</p>
+      <p class="hint">Gestión de usuarios, actividad y contenido de la app.</p>
 
-      <div class="card">
-        <p class="eyebrow">Resumen</p>
-        <div class="stat-row" id="adminStats"></div>
+      <div class="tabs-pill" id="adminTabs">
+        <div class="tab active" data-admintab="resumen">Resumen</div>
+        <div class="tab" data-admintab="usuarios">Usuarios</div>
+        <div class="tab" data-admintab="actividad">Actividad</div>
+        <div class="tab" data-admintab="auditoria">Auditoría</div>
+        <div class="tab" data-admintab="herramientas">Herramientas</div>
       </div>
 
-      <div class="card">
-        <p class="eyebrow">Actividad y tránsito</p>
-        <div class="stat-row" id="adminActividadStats"></div>
-        <p class="card-sub" style="margin-top:12px; margin-bottom:6px;">Últimos accesos</p>
-        <div id="adminAccesosList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;"></div>
+      <div id="adminPanelResumen">
+        <div class="card">
+          <p class="eyebrow">Resumen general</p>
+          <div class="stat-row" id="adminStats"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <p class="eyebrow">Usuarios registrados</p>
-        <div id="adminUserList" style="display:flex; flex-direction:column; gap:10px;"></div>
+      <div id="adminPanelUsuarios" style="display:none;">
+        <div class="card">
+          <p class="eyebrow">Usuarios registrados</p>
+          <div id="adminUserList" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <p class="eyebrow">Auditoría de acciones administrativas</p>
-        <div id="adminAuditoriaList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;"></div>
+      <div id="adminPanelActividad" style="display:none;">
+        <div class="card">
+          <p class="eyebrow">Actividad y tránsito</p>
+          <div class="stat-row" id="adminActividadStats"></div>
+          <p class="card-sub" style="margin-top:12px; margin-bottom:6px;">Últimos accesos</p>
+          <div id="adminAccesosList" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto;"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <p class="eyebrow">Anunciar novedad a todos los usuarios</p>
-        <p class="card-sub" style="margin-bottom:10px;">Le llega como notificación a todos los usuarios registrados (menos vos). Usalo para avisar de funciones nuevas o cambios importantes.</p>
-        <textarea id="anuncioTexto" placeholder="Ej: Ya podés subir tu foto de perfil desde Perfil 📸"></textarea>
-        <button class="primary-btn" id="anuncioBtn" style="margin-top:10px;">Enviar anuncio a todos</button>
+      <div id="adminPanelAuditoria" style="display:none;">
+        <div class="card">
+          <p class="eyebrow">Auditoría de acciones administrativas</p>
+          <div id="adminAuditoriaList" style="display:flex; flex-direction:column; gap:8px; max-height:400px; overflow-y:auto;"></div>
+        </div>
       </div>
 
-      <div class="card grad">
-        <p class="eyebrow">Zona de riesgo</p>
-        <p class="card-sub" style="margin-bottom:12px;">Borra todas las extracciones y recetas guardadas en este dispositivo. No afecta a los usuarios registrados.</p>
-        <button class="primary-btn" id="adminResetDataBtn">Borrar datos locales de la app</button>
+      <div id="adminPanelHerramientas" style="display:none;">
+        <div class="card">
+          <p class="eyebrow">Anunciar novedad a todos los usuarios</p>
+          <p class="card-sub" style="margin-bottom:10px;">Le llega como notificación a todos los usuarios registrados (menos vos). Usalo para avisar de funciones nuevas o cambios importantes.</p>
+          <textarea id="anuncioTexto" placeholder="Ej: Ya podés subir tu foto de perfil desde Perfil 📸"></textarea>
+          <button class="primary-btn" id="anuncioBtn" style="margin-top:10px;">Enviar anuncio a todos</button>
+        </div>
+
+        <div class="card grad">
+          <p class="eyebrow">Zona de riesgo</p>
+          <p class="card-sub" style="margin-bottom:12px;">Borra todas las extracciones y recetas guardadas en este dispositivo. No afecta a los usuarios registrados.</p>
+          <button class="primary-btn" id="adminResetDataBtn">Borrar datos locales de la app</button>
+        </div>
       </div>
     </div>
 
@@ -1162,7 +1197,7 @@
   let recetasCustom = [];
 
   // ---------- Navigation ----------
-  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad', 'historial-receta':'recetas' };
+  const backTarget = { analisis:'inicio', recetas:'explorar', ciencia:'explorar', cafes:'explorar', tecnicas:'explorar', aromas:'explorar', papers:'explorar', insights:'explorar', busqueda:'inicio', admin:'perfil', 'nueva-receta':'recetas', 'nuevo-cafe':'cafes', 'editar-receta':'recetas', 'publicar-extraccion':'comunidad', 'historial-receta':'recetas' };
   const navTabs = ['inicio','explorar','registro','comunidad','perfil'];
 
   function showView(name){
@@ -1524,6 +1559,111 @@
     cont.innerHTML = html;
   }
 
+  // ---------- BÚSQUEDA GLOBAL ----------
+  let busquedaTimer = null;
+  document.getElementById('busquedaInput').addEventListener('input', (e)=>{
+    clearTimeout(busquedaTimer);
+    const q = e.target.value.trim();
+    busquedaTimer = setTimeout(()=> ejecutarBusquedaGlobal(q), 250);
+  });
+
+  async function ejecutarBusquedaGlobal(q){
+    const cont = document.getElementById('busquedaResultados');
+    if(q.length < 2){ cont.innerHTML = ''; return; }
+    cont.innerHTML = '<p class="empty-note">Buscando...</p>';
+    const ql = q.toLowerCase();
+    const contiene = (str)=> (str||'').toLowerCase().includes(ql);
+
+    // Contenido estático ya cargado en memoria — sin llamadas al servidor.
+    const resRecetas = builtInRecetas.concat(recetasCustom).filter(r=> contiene(r.nombre) || contiene(r.tipo) || contiene(r.desc));
+    const resTecnicas = tecnicas.filter(t=> contiene(t.concepto) || contiene(t.explicacion));
+    const resCiencia = ciencia.filter(c=> contiene(c.concepto) || contiene(c.explicacion));
+    const resPapers = papersData.filter(p=> contiene(p.title) || contiene(p.src) || contiene(p.desc));
+    const resCafesGuia = cafes.filter(c=> contiene(c.t) || contiene(c.d));
+    const resAromas = [];
+    aromaWheelData.forEach(cat=>{
+      if(contiene(cat.name)) resAromas.push({ tipo:'categoria', nombre: cat.name, catId: cat.id });
+      cat.notes.forEach(n=>{ if(contiene(n.name)) resAromas.push({ tipo:'nota', nombre: n.name, catId: cat.id }); });
+    });
+
+    // Datos que viven en el servidor — se piden frescos.
+    let resCoffees = [], resUsuarios = [];
+    try{ const coffees = await apiFetch('/coffees'); resCoffees = coffees.filter(c=> contiene(c.nombre) || contiene(c.pais) || contiene(c.region) || contiene(c.variedad)); }catch(e){}
+    try{ const users = await apiFetch('/users/directorio'); resUsuarios = users.filter(u=> contiene(u.username)); }catch(e){}
+
+    const totalResultados = resRecetas.length + resTecnicas.length + resCiencia.length + resPapers.length + resCafesGuia.length + resAromas.length + resCoffees.length + resUsuarios.length;
+    if(totalResultados === 0){
+      cont.innerHTML = '<p class="empty-note">No se encontró nada con esa búsqueda.</p>';
+      return;
+    }
+
+    let html = '';
+    function seccion(titulo, items, render){
+      if(items.length === 0) return '';
+      return `<p class="eyebrow" style="margin-top:18px;">${titulo} (${items.length})</p>` + items.slice(0,8).map(render).join('');
+    }
+
+    html += seccion('Recetas', resRecetas, r=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-nav="recetas">
+        <p class="card-title" style="font-size:13.5px;">${esc(r.nombre)}</p>
+        <p class="card-sub">${esc(r.tipo)}</p>
+      </div>`);
+
+    html += seccion('Fichas de café', resCoffees, c=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-nav="cafes">
+        <p class="card-title" style="font-size:13.5px;">${esc(c.nombre)}</p>
+        <p class="card-sub">${esc([c.pais, c.region].filter(Boolean).join(' · '))}</p>
+      </div>`);
+
+    html += seccion('Usuarios', resUsuarios, u=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-perfil="${esc(u.username)}">
+        <p class="card-title" style="font-size:13.5px;">@${esc(u.username)}</p>
+        <p class="card-sub">${u.recetas} recetas · ${u.posts} extracciones compartidas</p>
+      </div>`);
+
+    html += seccion('Técnicas', resTecnicas, t=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-nav="tecnicas">
+        <p class="card-title" style="font-size:13.5px;">${esc(t.concepto)}</p>
+      </div>`);
+
+    html += seccion('Ciencia', resCiencia, c=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-nav="ciencia">
+        <p class="card-title" style="font-size:13.5px;">${esc(c.concepto)}</p>
+      </div>`);
+
+    html += seccion('Papers', resPapers, p=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-nav="papers">
+        <p class="card-title" style="font-size:13.5px;">${esc(p.title)}</p>
+        <p class="card-sub">${esc(p.src)}</p>
+      </div>`);
+
+    html += seccion('Cafés (guía por origen)', resCafesGuia, c=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-nav="cafes">
+        <p class="card-title" style="font-size:13.5px;">${esc(c.t)}</p>
+      </div>`);
+
+    html += seccion('Aromas y sabores', resAromas, a=>`
+      <div class="card" style="cursor:pointer; padding:12px;" data-busq-aroma="${esc(a.catId)}">
+        <p class="card-title" style="font-size:13.5px;">${esc(a.nombre)}</p>
+        <p class="card-sub">${a.tipo === 'categoria' ? 'Categoría' : 'Nota'}</p>
+      </div>`);
+
+    cont.innerHTML = html;
+
+    cont.querySelectorAll('[data-busq-nav]').forEach(el=>{
+      el.addEventListener('click', ()=> showView(el.dataset.busqNav));
+    });
+    cont.querySelectorAll('[data-busq-perfil]').forEach(el=>{
+      el.addEventListener('click', ()=> abrirPerfilPublico(el.dataset.busqPerfil, 'inicio'));
+    });
+    cont.querySelectorAll('[data-busq-aroma]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        showView('aromas');
+        selectAromaCategory(el.dataset.busqAroma);
+      });
+    });
+  }
+
   // ---------- RECETAS ----------
   function heroSvg(accent, iconPaths){
     return `<svg viewBox="0 0 400 200" style="width:100%; height:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
@@ -1593,6 +1733,9 @@
             ${r.id ? `<button class="icon-btn" data-ver-historial="${r.id}" title="Ver historial de versiones">
               <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>
             </button>` : ''}
+            ${r.id && sessionUser && (isOwner || sessionUser.role === 'administrador') ? `<button class="icon-btn" data-delete-recipe="${r.id}" title="Borrar receta">
+              <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+            </button>` : ''}
           </div>` : ''}
         </div>
         <div class="rc-body">
@@ -1631,6 +1774,18 @@
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
         abrirHistorialReceta(btn.dataset.verHistorial);
+      });
+    });
+    document.querySelectorAll('[data-delete-recipe]').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        if(!confirm('¿Borrar esta receta? Esta acción no se puede deshacer.')) return;
+        try{
+          await apiFetch(`/recipes/${btn.dataset.deleteRecipe}`, { method:'DELETE' });
+          await loadRecetas();
+          renderRecetas();
+          toast('Receta borrada');
+        }catch(e){ toast('No se pudo borrar: ' + e.message); }
       });
     });
   }
@@ -2690,6 +2845,17 @@
   });
 
   // ---------- ADMIN ----------
+  document.querySelectorAll('#adminTabs .tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('#adminTabs .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.admintab;
+      ['resumen','usuarios','actividad','auditoria','herramientas'].forEach(p=>{
+        document.getElementById('adminPanel' + p.charAt(0).toUpperCase() + p.slice(1)).style.display = (p === which) ? 'block' : 'none';
+      });
+    });
+  });
+
   async function renderAdmin(){
     const user = await currentUser();
     if(!user || user.role !== 'administrador'){ showView('perfil'); return; }

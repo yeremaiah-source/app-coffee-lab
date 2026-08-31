@@ -462,6 +462,36 @@ Basado en la imagen de referencia que pasaste (radar + barras de rango).
 
 **Esta ronda requiere migración** (tabla `Like` nueva).
 
+## Pour Trainer (entrenador de vertido)
+
+Inspirado conceptualmente en Oscillatte (sliders de Tilt/Flow/Wave
+Width/Track Speed para práctica de vertido), pero construido desde
+cero con código propio — nada copiado de esa herramienta.
+
+- ✅ **Simulación visual en vivo**: taza vista desde arriba con el
+  chorro animado en tiempo real — el Tilt inclina el chorro, el Flow
+  define su grosor, y Wave Width + Track Speed generan el movimiento
+  oscilante (`requestAnimationFrame`, sin librerías externas).
+- ✅ **Ejercicio 1 — Pulso constante**: mantener el control de Flow
+  entre 18 y 22 durante 8 segundos. El puntaje se calcula con datos
+  reales de la sesión (qué porcentaje del tiempo estuviste dentro del
+  objetivo), no un número inventado — por eso solo mostramos las dos
+  métricas que ese ejercicio realmente mide (Caudal y Tiempo), no las
+  cinco del ejemplo original (Velocidad/Amplitud/Simetría no
+  aplican todavía porque el nivel 1 no involucra movimiento ondulado).
+- ✅ **Historial de sesiones**: cada intento queda guardado
+  (`PourTrainerSesion`, tabla nueva) y se puede ver la evolución.
+- Se accede desde Técnicas → Pour Trainer.
+
+### Lo que queda pendiente (niveles 2 a 6)
+- Nivel 2 (Pulsos), Nivel 3 (Wiggle), Nivel 4 (Tulip), Nivel 5
+  (Rosetta), Nivel 6 (Swan/diseños complejos) y un modo libre — cada
+  uno necesita su propia mecánica de ejercicio y criterio de puntaje,
+  así que quedan para próximas rondas en vez de improvisar ahora un
+  criterio de puntaje que no esté bien fundamentado.
+
+**Esta ronda requiere migración** (tabla `PourTrainerSesion` nueva).
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

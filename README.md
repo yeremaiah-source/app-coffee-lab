@@ -492,6 +492,20 @@ cero con código propio — nada copiado de esa herramienta.
 
 **Esta ronda requiere migración** (tabla `PourTrainerSesion` nueva).
 
+- ✅ **Sensor de movimiento real del celular**: si tu dispositivo tiene
+  giroscopio/acelerómetro (la mayoría de los celulares), la deriva del
+  ejercicio ahora viene de tu movimiento real (leído vía
+  `DeviceMotionEvent.rotationRate`), no de una simulación matemática.
+  En iOS 13+ pide permiso explícito (obligatorio por seguridad del
+  navegador); en Android generalmente no hace falta. **Solo se activa
+  el modo "sensor real" una vez que efectivamente llega un dato** —
+  así se evita el caso de una compu de escritorio, donde el navegador
+  dice tener el sensor disponible pero nunca manda ningún evento real
+  (eso hubiera dejado la deriva en cero, sin ningún desafío). Si no
+  hay sensor o no da datos, sigue funcionando con la simulación
+  matemática de siempre — nunca se rompe, solo cambia la fuente de la
+  deriva. Un texto en pantalla te avisa cuál de las dos está activa.
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

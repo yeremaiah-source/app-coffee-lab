@@ -1134,9 +1134,14 @@
 
       <div class="card" id="ptEjercicioCard">
         <p class="eyebrow">Ejercicio 1 — Pulso constante</p>
-        <p class="card-sub" style="margin-bottom:10px;">Mantené el Flow entre 18 y 22 durante 8 segundos, usando el control de arriba.</p>
+        <p class="card-sub" style="margin-bottom:10px;">La mano nunca es perfectamente firme: el flujo real se desvía solo un poco. Corregí con el control de Flow para mantenerlo entre 18 y 22 durante 8 segundos.</p>
         <button class="primary-btn" id="ptEmpezarBtn">Empezar ejercicio</button>
+        <p class="card-sub" id="ptSensorEstado" style="text-align:center; margin-top:8px; font-size:11px;"></p>
         <div id="ptEjercicioEnCurso" style="display:none; margin-top:14px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span class="card-sub">Flow efectivo (objetivo: 18-22)</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:700;" id="ptFlowEfectivo">20.0</span>
+          </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
             <span class="card-sub">Tiempo restante</span>
             <span class="card-sub" id="ptTiempoRestante" style="font-family:'IBM Plex Mono',monospace;">8.0s</span>
@@ -2125,22 +2130,81 @@
   }
 
   let ptEjercicioMuestras = [];
-  document.getElementById('ptEmpezarBtn').addEventListener('click', ()=>{
+  let ptSensorActivo = false;
+  let ptUltimaLecturaSensor = 0;
+  let ptHandlerDeviceMotion = null;
+
+  // Pide permiso para leer el sensor de movimiento real del celular
+  // (obligatorio en iOS 13+, automático en la mayoría de Android).
+  // Devuelve true si vamos a poder usar el sensor real, false si hay
+  // que usar la simulación (sin sensor, permiso denegado, o compu de
+  // escritorio sin sensor de movimiento).
+  async function solicitarSensorMovimiento(){
+    if (typeof DeviceMotionEvent === 'undefined') return false;
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      try {
+        const resultado = await DeviceMotionEvent.requestPermission();
+        return resultado === 'granted';
+      } catch (e) { return false; }
+    }
+    return true; // Android y la mayoría de navegadores: no hace falta pedir permiso explícito
+  }
+
+  document.getElementById('ptEmpezarBtn').addEventListener('click', async ()=>{
     if(!sessionUser){ toast('Iniciá sesión para guardar tu progreso.'); return; }
     ptEjercicioMuestras = [];
-    document.getElementById('ptEjercicioEnCurso').style.display = 'block';
     document.getElementById('ptResultado').style.display = 'none';
     document.getElementById('ptEmpezarBtn').disabled = true;
+
+    // Empezamos asumiendo simulación, y recién pasamos al sensor real
+    // si de verdad llega un dato — así evitamos el caso de compus de
+    // escritorio, donde el navegador "dice" tener el sensor disponible
+    // pero nunca manda ningún evento real (dejaría la deriva en cero).
+    ptSensorActivo = false;
+    const permisoConcedido = await solicitarSensorMovimiento();
+    document.getElementById('ptSensorEstado').textContent = permisoConcedido
+      ? '📳 Buscando el sensor de movimiento de tu dispositivo...'
+      : '🖥️ Sin sensor de movimiento disponible — usando una simulación';
+
+    if(permisoConcedido){
+      ptHandlerDeviceMotion = (e)=>{
+        const gamma = e.rotationRate && e.rotationRate.gamma != null ? e.rotationRate.gamma : null;
+        if(gamma === null) return; // este evento no trae el dato que necesitamos
+        if(!ptSensorActivo){
+          ptSensorActivo = true;
+          document.getElementById('ptSensorEstado').textContent = '📳 Usando el sensor de movimiento real de tu celular';
+        }
+        ptUltimaLecturaSensor = Math.max(-6, Math.min(6, gamma / 8));
+      };
+      window.addEventListener('devicemotion', ptHandlerDeviceMotion);
+    }
+
+    document.getElementById('ptEjercicioEnCurso').style.display = 'block';
     const duracionMs = 8000;
     const inicio = performance.now();
     const flowSlider = document.getElementById('ptFlow');
+    const semillaAleatoria = Math.random() * 100; // hace que la deriva simulada sea distinta en cada intento
 
     function tick(){
       const transcurrido = performance.now() - inicio;
+      const t = transcurrido / 1000;
       const restante = Math.max(0, duracionMs - transcurrido);
       document.getElementById('ptTiempoRestante').textContent = (restante/1000).toFixed(1) + 's';
       document.getElementById('ptBarraTiempo').style.width = (100 * restante/duracionMs) + '%';
-      ptEjercicioMuestras.push(parseFloat(flowSlider.value));
+
+      // Si ya confirmamos que llega el sensor real, la deriva viene del
+      // movimiento genuino del celular. Si no (todavía no llegó ningún
+      // dato, o no hay sensor), se simula matemáticamente — de
+      // cualquier manera, el slider marca tu "intención" y hay que
+      // corregir para compensar.
+      const deriva = ptSensorActivo
+        ? ptUltimaLecturaSensor
+        : 3.5 * Math.sin((t + semillaAleatoria) * 1.3) + 1.2 * Math.sin((t + semillaAleatoria) * 3.7);
+      const flowEfectivo = Math.max(0, Math.min(40, parseFloat(flowSlider.value) + deriva));
+      document.getElementById('ptFlowEfectivo').textContent = flowEfectivo.toFixed(1);
+      document.getElementById('ptFlowEfectivo').style.color = (flowEfectivo >= 18 && flowEfectivo <= 22) ? 'var(--holo-3)' : 'var(--red)';
+
+      ptEjercicioMuestras.push(flowEfectivo);
       if(restante > 0) requestAnimationFrame(tick);
       else finalizarEjercicioPourTrainer();
     }
@@ -2148,6 +2212,10 @@
   });
 
   async function finalizarEjercicioPourTrainer(){
+    if(ptHandlerDeviceMotion){
+      window.removeEventListener('devicemotion', ptHandlerDeviceMotion);
+      ptHandlerDeviceMotion = null;
+    }
     document.getElementById('ptEjercicioEnCurso').style.display = 'none';
     document.getElementById('ptEmpezarBtn').disabled = false;
     const dentroDelObjetivo = ptEjercicioMuestras.filter(v => v >= 18 && v <= 22).length;

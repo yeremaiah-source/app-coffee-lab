@@ -523,6 +523,16 @@ cero con código propio — nada copiado de esa herramienta.
 - Cada intento queda guardado en el mismo historial que el resto del
   Pour Trainer.
 
+- ✅ **Movimiento real del celular para dibujar**: si tu dispositivo
+  tiene sensor de orientación, ahora podés inclinar el celular de lado
+  a lado mientras se traza el dibujo — como si fuera la jarra de
+  verdad — en vez de mover sliders. Se lee `DeviceOrientationEvent.gamma`
+  (la inclinación izquierda/derecha), y recién se confía en el sensor
+  real una vez que efectivamente llega un dato (mismo cuidado que en
+  el ejercicio de flujo, para no quedar en cero en una compu de
+  escritorio). Si no hay sensor, sigue funcionando con los sliders de
+  siempre — nunca se rompe, solo cambia de dónde sale el movimiento.
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

@@ -1158,7 +1158,7 @@
 
       <div class="card">
         <p class="eyebrow">🌿 Arte latte — Rosetta</p>
-        <p class="card-sub" style="margin-bottom:10px;">Usá los controles de arriba (Tilt, Wave Width, Track Speed) para definir cómo va a salir el dibujo, y después tocá "Dibujar" para verlo trazado de punta a punta.</p>
+        <p class="card-sub" style="margin-bottom:10px;">Si tu celular tiene sensor de orientación, inclinalo de lado a lado como si fuera la jarra mientras se dibuja. Si no, se usan los controles de arriba (Wave Width, Track Speed) en su lugar.</p>
         <svg id="ptRosettaSvg" viewBox="0 0 260 260" width="100%" style="display:block; max-width:240px; margin:0 auto 10px; background:var(--panel-2); border-radius:50%;"></svg>
         <button class="primary-btn" id="ptDibujarBtn">Dibujar rosetta</button>
         <p class="card-sub" id="ptRosettaResultado" style="text-align:center; margin-top:10px;"></p>
@@ -2269,11 +2269,23 @@
   }
 
   // ---------- ARTE LATTE (ROSETTA) ----------
-  // El mismo oscilar de lado a lado que usa el ejercicio de flujo,
-  // combinado con un "tirón hacia atrás" (subir el punto de vertido
-  // con el tiempo), traza naturalmente el patrón clásico de una
-  // rosetta — cada cruce por el centro es una hojita.
-  document.getElementById('ptDibujarBtn').addEventListener('click', ()=>{
+  // Si el celular tiene sensor de orientación, la inclinación real de
+  // lado a lado (como si el teléfono fuera la jarra) controla el
+  // trazo. Si no hay sensor o nunca llega un dato real, se usa la
+  // misma simulación por sliders que ya teníamos — nunca se rompe,
+  // solo cambia de dónde sale el movimiento.
+  async function solicitarSensorOrientacion(){
+    if (typeof DeviceOrientationEvent === 'undefined') return false;
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        const resultado = await DeviceOrientationEvent.requestPermission();
+        return resultado === 'granted';
+      } catch (e) { return false; }
+    }
+    return true;
+  }
+
+  document.getElementById('ptDibujarBtn').addEventListener('click', async ()=>{
     const svg = document.getElementById('ptRosettaSvg');
     const tilt = document.getElementById('ptTilt');
     const wave = document.getElementById('ptWave');
@@ -2283,27 +2295,53 @@
     document.getElementById('ptDibujarBtn').disabled = true;
 
     const cx = 130, cy0 = 220, cyFinal = 40; // arranca cerca del borde, termina cerca del centro
-    const duracionMs = 5000;
-    const inicio = performance.now();
     const puntos = [];
     let cruces = 0;
     let signoAnterior = null;
-
     svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="#C9A876" opacity=".35"/>`;
+
+    let usandoSensorReal = false;
+    let gammaActual = 0;
+    let handlerOrientacion = null;
+    const permisoConcedido = await solicitarSensorOrientacion();
+    resultadoEl.textContent = permisoConcedido
+      ? '📳 Buscando el sensor de tu celular...'
+      : '🖥️ Sin sensor de orientación disponible — usando los controles de arriba';
+
+    if(permisoConcedido){
+      handlerOrientacion = (e)=>{
+        if(e.gamma == null) return;
+        if(!usandoSensorReal){
+          usandoSensorReal = true;
+          resultadoEl.textContent = '📳 Inclina tu celular de lado a lado, como si fuera la jarra';
+        }
+        gammaActual = e.gamma;
+      };
+      window.addEventListener('deviceorientation', handlerOrientacion);
+    }
+
+    const duracionMs = 5000;
+    const inicio = performance.now();
 
     function frame(now){
       const transcurrido = now - inicio;
       const t = transcurrido / 1000;
       const progreso = Math.min(1, transcurrido / duracionMs);
 
-      const waveW = parseFloat(wave.value);
-      const trackSpeed = parseFloat(speed.value);
-      const tiltDeg = parseFloat(tilt.value);
-      // El tilt agranda un poco la amplitud (más inclinada la jarra,
-      // hojitas más abiertas) — un efecto sutil, no el protagonista.
-      const amplitud = waveW * (1 + tiltDeg/90);
-
-      const x = cx + amplitud * Math.sin(t * trackSpeed);
+      let x;
+      if(usandoSensorReal){
+        // gamma: inclinación izquierda/derecha del celular, en grados.
+        // Un rango cómodo de inclinación (unos 25°) mapea a todo el
+        // ancho del dibujo.
+        const amplitudMax = 55;
+        x = cx + Math.max(-amplitudMax, Math.min(amplitudMax, (gammaActual/25) * amplitudMax));
+      } else {
+        const waveW = parseFloat(wave.value);
+        const trackSpeed = parseFloat(speed.value);
+        const tiltDeg = parseFloat(tilt.value);
+        const amplitud = waveW * (1 + tiltDeg/90);
+        x = cx + amplitud * Math.sin(t * trackSpeed);
+      }
       const y = cy0 + (cyFinal - cy0) * progreso;
       puntos.push({x, y});
 
@@ -2318,6 +2356,7 @@
       if(progreso < 1){
         requestAnimationFrame(frame);
       } else {
+        if(handlerOrientacion) window.removeEventListener('deviceorientation', handlerOrientacion);
         finalizarRosetta(cruces);
       }
     }

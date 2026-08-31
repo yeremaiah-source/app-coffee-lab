@@ -506,6 +506,23 @@ cero con código propio — nada copiado de esa herramienta.
   matemática de siempre — nunca se rompe, solo cambia la fuente de la
   deriva. Un texto en pantalla te avisa cuál de las dos está activa.
 
+## Arte latte — Rosetta
+
+- ✅ **Nuevo modo dentro del Pour Trainer**: reutiliza los mismos
+  controles (Tilt, Wave Width, Track Speed) para trazar una rosetta de
+  verdad — el patrón oscilante que ya generaban esos sliders, ahora
+  combinado con un "tirón hacia atrás" (el punto de vertido sube desde
+  el borde de la taza hacia el centro con el tiempo), dibuja el
+  patrón clásico de hojitas en vez de un punto suelto.
+- ✅ **Puntaje real, no inventado**: se cuenta cuántas veces el trazo
+  cruzó el centro durante el dibujo (cada cruce de ida y vuelta = una
+  hojita) — si caen entre 5 y 9 (el rango típico de una rosetta
+  prolija), el puntaje es alto; si son muy pocas o demasiadas, te
+  sugiere subir o bajar el Track Speed específicamente, en vez de un
+  mensaje genérico.
+- Cada intento queda guardado en el mismo historial que el resto del
+  Pour Trainer.
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

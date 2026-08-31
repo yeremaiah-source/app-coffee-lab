@@ -1156,6 +1156,14 @@
         </div>
       </div>
 
+      <div class="card">
+        <p class="eyebrow">🌿 Arte latte — Rosetta</p>
+        <p class="card-sub" style="margin-bottom:10px;">Usá los controles de arriba (Tilt, Wave Width, Track Speed) para definir cómo va a salir el dibujo, y después tocá "Dibujar" para verlo trazado de punta a punta.</p>
+        <svg id="ptRosettaSvg" viewBox="0 0 260 260" width="100%" style="display:block; max-width:240px; margin:0 auto 10px; background:var(--panel-2); border-radius:50%;"></svg>
+        <button class="primary-btn" id="ptDibujarBtn">Dibujar rosetta</button>
+        <p class="card-sub" id="ptRosettaResultado" style="text-align:center; margin-top:10px;"></p>
+      </div>
+
       <p class="eyebrow" style="margin-top:22px;">Tu historial</p>
       <div id="ptHistorialList"></div>
     </div>
@@ -2258,6 +2266,91 @@
         </div>
         <p style="font-family:'Bungee',sans-serif; font-size:20px; color:var(--purple-2);">${s.puntaje}</p>
       </div>`).join('');
+  }
+
+  // ---------- ARTE LATTE (ROSETTA) ----------
+  // El mismo oscilar de lado a lado que usa el ejercicio de flujo,
+  // combinado con un "tirón hacia atrás" (subir el punto de vertido
+  // con el tiempo), traza naturalmente el patrón clásico de una
+  // rosetta — cada cruce por el centro es una hojita.
+  document.getElementById('ptDibujarBtn').addEventListener('click', ()=>{
+    const svg = document.getElementById('ptRosettaSvg');
+    const tilt = document.getElementById('ptTilt');
+    const wave = document.getElementById('ptWave');
+    const speed = document.getElementById('ptSpeed');
+    const resultadoEl = document.getElementById('ptRosettaResultado');
+    resultadoEl.textContent = '';
+    document.getElementById('ptDibujarBtn').disabled = true;
+
+    const cx = 130, cy0 = 220, cyFinal = 40; // arranca cerca del borde, termina cerca del centro
+    const duracionMs = 5000;
+    const inicio = performance.now();
+    const puntos = [];
+    let cruces = 0;
+    let signoAnterior = null;
+
+    svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="#C9A876" opacity=".35"/>`;
+
+    function frame(now){
+      const transcurrido = now - inicio;
+      const t = transcurrido / 1000;
+      const progreso = Math.min(1, transcurrido / duracionMs);
+
+      const waveW = parseFloat(wave.value);
+      const trackSpeed = parseFloat(speed.value);
+      const tiltDeg = parseFloat(tilt.value);
+      // El tilt agranda un poco la amplitud (más inclinada la jarra,
+      // hojitas más abiertas) — un efecto sutil, no el protagonista.
+      const amplitud = waveW * (1 + tiltDeg/90);
+
+      const x = cx + amplitud * Math.sin(t * trackSpeed);
+      const y = cy0 + (cyFinal - cy0) * progreso;
+      puntos.push({x, y});
+
+      const signo = Math.sign(x - cx);
+      if(signoAnterior !== null && signo !== 0 && signo !== signoAnterior) cruces++;
+      signoAnterior = signo;
+
+      const path = puntos.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="#C9A876" opacity=".35"/>
+        <polyline points="${path}" fill="none" stroke="#4A2E17" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+      if(progreso < 1){
+        requestAnimationFrame(frame);
+      } else {
+        finalizarRosetta(cruces);
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+
+  async function finalizarRosetta(cruces){
+    document.getElementById('ptDibujarBtn').disabled = false;
+    const hojitas = Math.round(cruces / 2);
+    const resultadoEl = document.getElementById('ptRosettaResultado');
+    let mensaje, puntaje;
+    if(hojitas >= 5 && hojitas <= 9){
+      mensaje = `¡Rosetta prolija! ${hojitas} hojitas — justo en el rango clásico (5 a 9).`;
+      puntaje = 100 - Math.abs(hojitas - 7) * 5;
+    } else if(hojitas < 5){
+      mensaje = `${hojitas} hojita${hojitas===1?'':'s'} — un poco pocas. Probá subir Track Speed para que oscile más veces.`;
+      puntaje = Math.max(20, 60 - (5-hojitas)*10);
+    } else {
+      mensaje = `${hojitas} hojitas — se pasó de vueltas. Probá bajar Track Speed para hojitas más grandes y prolijas.`;
+      puntaje = Math.max(20, 60 - (hojitas-9)*8);
+    }
+    resultadoEl.textContent = mensaje;
+
+    if(sessionUser){
+      try{
+        await apiFetch('/pour-trainer', { method:'POST', body: JSON.stringify({
+          ejercicio: 'Arte latte — Rosetta',
+          puntaje: Math.round(puntaje),
+          detalle: { hojitas },
+        })});
+        renderPourTrainerHistorial();
+      }catch(e){ /* no interrumpe la experiencia si falla el guardado */ }
+    }
   }
 
   // ---------- RECETAS ----------

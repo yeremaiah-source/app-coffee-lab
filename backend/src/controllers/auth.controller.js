@@ -4,6 +4,19 @@ const { hashPassword, verifyPassword } = require('../utils/hash');
 const { signToken } = require('../utils/jwt');
 const { sendPasswordResetEmail } = require('../utils/email');
 
+// GET /api/auth/me — la fuente de verdad real de quién sos ahora
+// mismo, según la base de datos. El frontend la usa al abrir la app
+// para no confiar ciegamente en lo que quedó guardado en el
+// navegador (username, rol, avatar) de la última vez que iniciaste
+// sesión — si tu rol cambió, o tu token ya no es válido, se entera acá.
+async function me(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.sub } });
+    if (!user) return res.status(401).json({ error: 'Usuario no encontrado.' });
+    res.json({ id: user.id, username: user.username, role: user.role, avatarUrl: user.avatarUrl });
+  } catch (e) { next(e); }
+}
+
 async function register(req, res, next) {
   try {
     const { username, email, password } = req.body;
@@ -162,4 +175,4 @@ async function resetPassword(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { register, login, changePassword, forgotPassword, resetPassword, logout };
+module.exports = { register, login, changePassword, forgotPassword, resetPassword, logout, me };

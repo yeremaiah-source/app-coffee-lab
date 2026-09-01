@@ -2298,9 +2298,13 @@
     const puntos = [];
     let cruces = 0;
     let signoAnterior = null;
-    svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="#C9A876" opacity=".35"/>`;
+    const UMBRAL_CRUCE = 8; // hay que pasarse este tanto del centro para que cuente como una hojita real, no ruido del sensor
+    const FONDO_CAFE = '#2E1B10';
+    const COLOR_LECHE = '#F3E4C6';
+    svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="${FONDO_CAFE}"/>`;
 
     let usandoSensorReal = false;
+    let gammaBase = null;
     let gammaActual = 0;
     let handlerOrientacion = null;
     const permisoConcedido = await solicitarSensorOrientacion();
@@ -2313,6 +2317,7 @@
         if(e.gamma == null) return;
         if(!usandoSensorReal){
           usandoSensorReal = true;
+          gammaBase = e.gamma; // la inclinación "neutral" con la que sostenías el celular al empezar
           resultadoEl.textContent = '📳 Inclina tu celular de lado a lado, como si fuera la jarra';
         }
         gammaActual = e.gamma;
@@ -2323,6 +2328,12 @@
     const duracionMs = 5000;
     const inicio = performance.now();
 
+    function dibujarTrazo(){
+      const path = puntos.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="${FONDO_CAFE}"/>
+        <polyline points="${path}" fill="none" stroke="${COLOR_LECHE}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/>`;
+    }
+
     function frame(now){
       const transcurrido = now - inicio;
       const t = transcurrido / 1000;
@@ -2330,11 +2341,21 @@
 
       let x;
       if(usandoSensorReal){
-        // gamma: inclinación izquierda/derecha del celular, en grados.
-        // Un rango cómodo de inclinación (unos 25°) mapea a todo el
-        // ancho del dibujo.
+        // Se compara contra la inclinación "neutral" del arranque, no
+        // contra cero absoluto — así no importa con qué ángulo
+        // sostengas el celular normalmente.
         const amplitudMax = 55;
-        x = cx + Math.max(-amplitudMax, Math.min(amplitudMax, (gammaActual/25) * amplitudMax));
+        const diferencia = gammaActual - (gammaBase || 0);
+        // Más sensible que antes (12° en vez de 20° para el ancho
+        // completo) — una inclinación normal de mano ya alcanza.
+        const proporcion = Math.max(-1, Math.min(1, diferencia/12));
+        // Se "afila" el movimiento hacia los extremos (elevando a una
+        // potencia menor a 1): un gesto humano suave y continuo queda
+        // con más tiempo cerca de las puntas y cruza rápido por el
+        // centro — así se dibujan hojitas puntiagudas de verdad, no
+        // una simple curva pareja de lado a lado.
+        const afilado = Math.sign(proporcion) * Math.pow(Math.abs(proporcion), 0.55);
+        x = cx + afilado * amplitudMax;
       } else {
         const waveW = parseFloat(wave.value);
         const trackSpeed = parseFloat(speed.value);
@@ -2345,19 +2366,39 @@
       const y = cy0 + (cyFinal - cy0) * progreso;
       puntos.push({x, y});
 
-      const signo = Math.sign(x - cx);
-      if(signoAnterior !== null && signo !== 0 && signo !== signoAnterior) cruces++;
-      signoAnterior = signo;
+      // Para que cuente como una "hojita" de verdad, el trazo tiene que
+      // pasarse un margen real del centro en la nueva dirección — así
+      // el ruido natural del sensor (pequeños temblores) no infla el
+      // conteo con cruces que no son intencionales.
+      if(x > cx + UMBRAL_CRUCE) {
+        if(signoAnterior === -1) cruces++;
+        signoAnterior = 1;
+      } else if(x < cx - UMBRAL_CRUCE) {
+        if(signoAnterior === 1) cruces++;
+        signoAnterior = -1;
+      }
 
-      const path = puntos.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-      svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="#C9A876" opacity=".35"/>
-        <polyline points="${path}" fill="none" stroke="#4A2E17" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+      dibujarTrazo();
 
       if(progreso < 1){
         requestAnimationFrame(frame);
       } else {
         if(handlerOrientacion) window.removeEventListener('deviceorientation', handlerOrientacion);
-        finalizarRosetta(cruces);
+        // El "corte" final: una línea recta por el medio, de punta a
+        // punta — es lo que en una rosetta real separa visualmente
+        // cada hojita, en vez de dejarlas como una sola curva continua.
+        let progresoLinea = 0;
+        function dibujarLineaFinal(){
+          progresoLinea = Math.min(1, progresoLinea + 0.06);
+          const path = puntos.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+          const yLinea = cy0 + (cyFinal - cy0) * progresoLinea;
+          svg.innerHTML = `<circle cx="130" cy="130" r="128" fill="${FONDO_CAFE}"/>
+            <polyline points="${path}" fill="none" stroke="${COLOR_LECHE}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/>
+            <line x1="${cx}" y1="${cy0}" x2="${cx}" y2="${yLinea.toFixed(1)}" stroke="${COLOR_LECHE}" stroke-width="6" stroke-linecap="round"/>`;
+          if(progresoLinea < 1) requestAnimationFrame(dibujarLineaFinal);
+          else finalizarRosetta(cruces);
+        }
+        requestAnimationFrame(dibujarLineaFinal);
       }
     }
     requestAnimationFrame(frame);

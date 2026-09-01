@@ -533,6 +533,15 @@ cero con código propio — nada copiado de esa herramienta.
   escritorio). Si no hay sensor, sigue funcionando con los sliders de
   siempre — nunca se rompe, solo cambia de dónde sale el movimiento.
 
+- ✅ **Corrección de forma**: el primer intento con el sensor real
+  salía como una línea suave, sin la forma puntiaguda característica
+  de una hojita. Se corrigió con dos ajustes: más sensibilidad (una
+  inclinación normal de mano ya alcanza el ancho completo del dibujo,
+  antes hacía falta inclinar mucho más), y una curva que "afila" el
+  movimiento hacia los extremos — el trazo pasa más tiempo cerca de
+  las puntas y cruza rápido por el centro, imitando el gesto real de
+  una hojita en vez de una onda pareja de lado a lado.
+
 ### Para probar el frontend contra tu backend local
 
 1. Dejá corriendo `npm run dev` en `backend/` (como ya hiciste).

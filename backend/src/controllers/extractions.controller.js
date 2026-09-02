@@ -219,8 +219,8 @@ async function insights(req, res, next) {
         }
         comparacionMejorPeor = {
           suficientesDatos: true,
-          mejor: { id: mejor.id, metodo: mejor.metodo, ey: mejor.ey, categoria: mejor.categoria, createdAt: mejor.createdAt },
-          peor: { id: peor.id, metodo: peor.metodo, ey: peor.ey, categoria: peor.categoria, createdAt: peor.createdAt },
+          mejor: { id: mejor.id, metodo: mejor.metodo, ey: mejor.ey, categoria: mejor.categoria, tdsEstimado: mejor.tdsEstimado, createdAt: mejor.createdAt },
+          peor: { id: peor.id, metodo: peor.metodo, ey: peor.ey, categoria: peor.categoria, tdsEstimado: peor.tdsEstimado, createdAt: peor.createdAt },
           diferencias,
         };
       }

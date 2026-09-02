@@ -16,6 +16,18 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   process.exit(1);
 }
 
+// Si estamos en producción y no hay ningún origen configurado para
+// CORS, el servidor quedaría abierto a cualquier sitio — un deploy mal
+// configurado no debe convertirse silenciosamente en una API pública
+// sin restricciones. Mejor que directamente no arranque.
+if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_ORIGIN) {
+  console.error(
+    'ERROR: FRONTEND_ORIGIN no está definido en producción. Sin esto, CORS quedaría ' +
+    'abierto a cualquier origen. Configurá FRONTEND_ORIGIN con la URL real del frontend.'
+  );
+  process.exit(1);
+}
+
 const authRoutes = require('./routes/auth.routes');
 const extractionsRoutes = require('./routes/extractions.routes');
 const recipesRoutes = require('./routes/recipes.routes');

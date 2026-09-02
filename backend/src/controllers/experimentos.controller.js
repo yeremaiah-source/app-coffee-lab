@@ -33,6 +33,13 @@ async function crear(req, res, next) {
     if (!variableModificada || !variableModificada.trim()) {
       return res.status(400).json({ error: 'Tenés que indicar qué variable vas a modificar.' });
     }
+    const LIMITES = { hipotesis: 1000, variableModificada: 200, variablesConstantes: 1000, resultadoEsperado: 1000 };
+    const valores = { hipotesis, variableModificada, variablesConstantes, resultadoEsperado };
+    for (const [campo, max] of Object.entries(LIMITES)) {
+      if (valores[campo] && valores[campo].length > max) {
+        return res.status(400).json({ error: `El campo ${campo} no puede superar los ${max} caracteres.` });
+      }
+    }
     const experimento = await prisma.experimento.create({
       data: {
         userId: req.user.sub,
@@ -56,6 +63,13 @@ async function actualizar(req, res, next) {
       return res.status(403).json({ error: 'Este no es tu experimento.' });
     }
     const { hipotesis, variableModificada, variablesConstantes, resultadoEsperado, resultadoReal, conclusion, estado } = req.body;
+    const LIMITES = { hipotesis: 1000, variableModificada: 200, variablesConstantes: 1000, resultadoEsperado: 1000, resultadoReal: 1000, conclusion: 1000 };
+    const entrantes = { hipotesis, variableModificada, variablesConstantes, resultadoEsperado, resultadoReal, conclusion };
+    for (const [campo, max] of Object.entries(LIMITES)) {
+      if (entrantes[campo] && entrantes[campo].length > max) {
+        return res.status(400).json({ error: `El campo ${campo} no puede superar los ${max} caracteres.` });
+      }
+    }
     const data = {};
     if (hipotesis !== undefined) data.hipotesis = hipotesis;
     if (variableModificada !== undefined) data.variableModificada = variableModificada;

@@ -28,6 +28,14 @@ async function crear(req, res, next) {
     const { nombre, origen, pais, region, productor, variedad, proceso, altitudMsnm, tueste, fechaTueste, notasSensoriales } = req.body;
     if (!nombre) return res.status(400).json({ error: 'El nombre del café es obligatorio.' });
 
+    const LIMITES = { nombre: 120, origen: 120, pais: 80, region: 120, productor: 120, variedad: 120, proceso: 80, tueste: 60, notasSensoriales: 2000 };
+    const valores = { nombre, origen, pais, region, productor, variedad, proceso, tueste, notasSensoriales };
+    for (const [campo, max] of Object.entries(LIMITES)) {
+      if (valores[campo] && String(valores[campo]).length > max) {
+        return res.status(400).json({ error: `El campo ${campo} no puede superar los ${max} caracteres.` });
+      }
+    }
+
     const coffee = await prisma.coffee.create({
       data: {
         addedById: req.user.sub,

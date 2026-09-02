@@ -1,5 +1,5 @@
 const prisma = require('../prismaClient');
-const { crearNotificacion, crearNotificacionMasiva } = require('./notifications.controller');
+const { crearNotificacion } = require('./notifications.controller');
 
 async function listar(req, res, next) {
   try {
@@ -17,6 +17,15 @@ async function crear(req, res, next) {
     if (!nombre || !metodo) {
       return res.status(400).json({ error: 'Nombre y método son obligatorios.' });
     }
+    // Límites de longitud — evita que alguien mande cadenas gigantescas
+    // que inflen la base de datos o rompan la interfaz de otros.
+    const LIMITES = { nombre: 120, metodo: 60, cafe: 120, molienda: 80, ratio: 30, pasos: 5000, notas: 2000 };
+    for (const [campo, max] of Object.entries(LIMITES)) {
+      const valor = { nombre, metodo, cafe, molienda, ratio, pasos, notas }[campo];
+      if (valor && String(valor).length > max) {
+        return res.status(400).json({ error: `El campo ${campo} no puede superar los ${max} caracteres.` });
+      }
+    }
     const recipe = await prisma.recipe.create({
       data: {
         authorId: req.user.sub,
@@ -25,16 +34,11 @@ async function crear(req, res, next) {
       include: { author: { select: { username: true } } },
     });
     res.status(201).json(recipe);
-    // Solo se avisa de recetas nuevas de verdad (versión 1) — duplicar
-    // una receta ya notifica al autor original por su cuenta, y no
-    // hace falta spamear a todos por cada versión editada.
-    if (recipe.version === 1) {
-      await crearNotificacionMasiva({
-        tipo: 'receta_nueva',
-        mensaje: `@${recipe.author.username} publicó una receta nueva: "${recipe.nombre}"`,
-        excluirUserId: req.user.sub,
-      });
-    }
+    // Nota: antes esto le mandaba una notificación a TODOS los
+    // usuarios registrados por cada receta nueva — cualquier usuario
+    // autenticado podía activarlo creando recetas repetidamente, sin
+    // ningún límite. Se sacó: las notificaciones masivas quedan
+    // reservadas solo para anuncios de administrador.
   } catch (e) { next(e); }
 }
 

@@ -54,6 +54,9 @@ async function toggleLike(req, res, next) {
 async function publicar(req, res, next) {
   try {
     const { extractionId, descripcion, fotoUrl } = req.body;
+    if (descripcion && descripcion.length > 500) {
+      return res.status(400).json({ error: 'La descripción no puede superar los 500 caracteres.' });
+    }
     const extraction = await prisma.extraction.findUnique({ where: { id: extractionId } });
     if (!extraction || extraction.userId !== req.user.sub) {
       return res.status(404).json({ error: 'Extracción no encontrada o no te pertenece.' });
@@ -72,7 +75,8 @@ async function publicar(req, res, next) {
 async function comentar(req, res, next) {
   try {
     const { texto } = req.body;
-    if (!texto) return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
+    if (!texto || !texto.trim()) return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
+    if (texto.length > 1000) return res.status(400).json({ error: 'El comentario no puede superar los 1000 caracteres.' });
     const comment = await prisma.comment.create({
       data: { postId: req.params.postId, userId: req.user.sub, texto },
       include: { post: true, user: { select: { username: true } } },

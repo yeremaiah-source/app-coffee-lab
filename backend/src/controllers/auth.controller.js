@@ -141,9 +141,15 @@ async function forgotPassword(req, res, next) {
     });
     if (!user || !user.email) return res.json(respuestaGenerica);
 
+    // El token que se manda por email es el real; en la base solo se
+    // guarda su hash SHA-256. Así, si alguna vez se filtra una copia
+    // de la base de datos, esos hashes no sirven para recuperar una
+    // cuenta directamente — hace falta el token original, que nunca
+    // quedó guardado en ningún lado.
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
-    await prisma.user.update({ where: { id: user.id }, data: { resetToken: token, resetTokenExpires } });
+    await prisma.user.update({ where: { id: user.id }, data: { resetToken: tokenHash, resetTokenExpires } });
 
     const frontendOrigin = (process.env.FRONTEND_ORIGIN || '').split(',')[0].trim() || 'http://localhost';
     const resetUrl = `${frontendOrigin}/?reset=${token}`;
@@ -162,7 +168,8 @@ async function resetPassword(req, res, next) {
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
     }
-    const user = await prisma.user.findUnique({ where: { resetToken: token } });
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await prisma.user.findUnique({ where: { resetToken: tokenHash } });
     if (!user || !user.resetTokenExpires || user.resetTokenExpires < new Date()) {
       return res.status(400).json({ error: 'El link de recuperación es inválido o venció. Pedí uno nuevo.' });
     }

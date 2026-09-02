@@ -44,7 +44,7 @@ model User {
 // evolución en el tiempo.
 model PourTrainerSesion {
   id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   ejercicio String
   puntaje   Int
@@ -58,7 +58,7 @@ model PourTrainerSesion {
 // las recetas.
 model Experimento {
   id                  String   @id @default(uuid())
-  user                User     @relation(fields: [userId], references: [id])
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId              String
   hipotesis           String
   variableModificada  String
@@ -75,7 +75,7 @@ model Experimento {
 // actividad de inicios de sesión (fecha, IP, dispositivo).
 model LoginEvent {
   id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   ip        String?
   userAgent String?
@@ -98,7 +98,7 @@ model AdminAuditLog {
 // publicación o duplica una receta tuya.
 model Notification {
   id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   tipo      String
   mensaje   String
@@ -108,7 +108,7 @@ model Notification {
 
 model Extraction {
   id                  String   @id @default(uuid())
-  user                User     @relation(fields: [userId], references: [id])
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId              String
   metodo              String
   cafe                String?
@@ -152,7 +152,7 @@ model TdsCalibration {
 
 model Recipe {
   id               String   @id @default(uuid())
-  author           User     @relation(fields: [authorId], references: [id])
+  author           User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId         String
   nombre           String
   metodo           String
@@ -168,14 +168,19 @@ model Recipe {
   version          Int      @default(1)
   resultados       String?
   parentRecipeId   String?
-  parentRecipe     Recipe?  @relation("RecipeVersions", fields: [parentRecipeId], references: [id])
+  // Si la receta "madre" se borra (por ejemplo, se eliminó la cuenta
+  // de quien la creó), las versiones derivadas no se borran en
+  // cascada — se quedan como recetas independientes (parentRecipeId
+  // queda en null) en vez de arrastrar el borrado a versiones que
+  // pueden ser de otras personas.
+  parentRecipe     Recipe?  @relation("RecipeVersions", fields: [parentRecipeId], references: [id], onDelete: SetNull)
   versiones        Recipe[] @relation("RecipeVersions")
   createdAt        DateTime @default(now())
 }
 
 model Coffee {
   id             String   @id @default(uuid())
-  addedBy        User     @relation(fields: [addedById], references: [id])
+  addedBy        User     @relation(fields: [addedById], references: [id], onDelete: Cascade)
   addedById      String
   nombre         String
   origen         String?
@@ -193,9 +198,9 @@ model Coffee {
 
 model CommunityPost {
   id           String     @id @default(uuid())
-  extraction   Extraction @relation(fields: [extractionId], references: [id])
+  extraction   Extraction @relation(fields: [extractionId], references: [id], onDelete: Cascade)
   extractionId String     @unique
-  user         User       @relation(fields: [userId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
   descripcion  String?
   fotoUrl      String?
@@ -209,9 +214,9 @@ model CommunityPost {
 // que alguien pueda dar like más de una vez a lo mismo.
 model Like {
   id        String        @id @default(uuid())
-  post      CommunityPost @relation(fields: [postId], references: [id])
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId    String
-  user      User          @relation(fields: [userId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   createdAt DateTime      @default(now())
 
@@ -220,9 +225,9 @@ model Like {
 
 model Comment {
   id        String        @id @default(uuid())
-  post      CommunityPost @relation(fields: [postId], references: [id])
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId    String
-  user      User          @relation(fields: [userId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   texto     String
   createdAt DateTime      @default(now())

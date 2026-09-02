@@ -135,6 +135,25 @@ function scoreDesdeCV(cv){
   return Math.max(0, Math.min(100, 100 - cv*100*3));
 }
 
+// Calcula el score de consistencia y el detalle por variable para un
+// grupo cualquiera de extracciones — se reutiliza tanto para el score
+// general como para comparar "mitad reciente" vs "mitad anterior".
+function calcularMetricasDeGrupo(extractions){
+  const dosis = extractions.map(e=>e.dosisG).filter(v=>v!=null);
+  const ratios = extractions.filter(e=>e.dosisG && e.aguaG).map(e=>e.aguaG/e.dosisG);
+  const tiempos = extractions.map(e=>e.tiempoSeg).filter(v=>v!=null);
+  const cvDosis = coeficienteVariacion(dosis);
+  const cvRatio = coeficienteVariacion(ratios);
+  const cvTiempo = coeficienteVariacion(tiempos);
+  const variables = [];
+  if(cvDosis !== null) variables.push({ nombre:'Dosis', cv: cvDosis, score: scoreDesdeCV(cvDosis) });
+  if(cvRatio !== null) variables.push({ nombre:'Ratio', cv: cvRatio, score: scoreDesdeCV(cvRatio) });
+  if(cvTiempo !== null) variables.push({ nombre:'Tiempo', cv: cvTiempo, score: scoreDesdeCV(cvTiempo) });
+  if(variables.length === 0) return null;
+  const scoreGeneral = variables.reduce((a,v)=>a+v.score,0) / variables.length;
+  return { score: scoreGeneral, variables };
+}
+
 async function calcularConsistencia(userId, metodo){
   const where = metodo ? { userId, metodo } : { userId };
   const extractions = await prisma.extraction.findMany({
@@ -143,30 +162,47 @@ async function calcularConsistencia(userId, metodo){
   if(extractions.length < 3){
     return { suficientesDatos: false, mensaje: 'No hay suficientes datos para establecer una relación. Registrá al menos 3 extracciones para calcular tu consistencia.' };
   }
-  const dosis = extractions.map(e=>e.dosisG).filter(v=>v!=null);
-  const ratios = extractions.filter(e=>e.dosisG && e.aguaG).map(e=>e.aguaG/e.dosisG);
-  const tiempos = extractions.map(e=>e.tiempoSeg).filter(v=>v!=null);
-
-  const cvDosis = coeficienteVariacion(dosis);
-  const cvRatio = coeficienteVariacion(ratios);
-  const cvTiempo = coeficienteVariacion(tiempos);
-
-  const variables = [];
-  if(cvDosis !== null) variables.push({ nombre:'Dosis', cv: cvDosis, score: scoreDesdeCV(cvDosis) });
-  if(cvRatio !== null) variables.push({ nombre:'Ratio', cv: cvRatio, score: scoreDesdeCV(cvRatio) });
-  if(cvTiempo !== null) variables.push({ nombre:'Tiempo', cv: cvTiempo, score: scoreDesdeCV(cvTiempo) });
-
-  if(variables.length === 0){
+  const metricas = calcularMetricasDeGrupo(extractions);
+  if(!metricas){
     return { suficientesDatos: false, mensaje: 'No hay suficientes datos para establecer una relación.' };
   }
-  const scoreGeneral = variables.reduce((a,v)=>a+v.score,0) / variables.length;
-  const label = scoreGeneral >= 85 ? 'Excelente' : scoreGeneral >= 65 ? 'Buena' : scoreGeneral >= 40 ? 'Irregular' : 'Baja';
+  const label = metricas.score >= 85 ? 'Excelente' : metricas.score >= 65 ? 'Buena' : metricas.score >= 40 ? 'Irregular' : 'Baja';
+
+  // Tendencia: compara tu mitad más reciente contra la mitad anterior
+  // (con las mismas extracciones que ya se usan para el score, sin
+  // pedir nada extra) — y señala qué variable puntual explica el
+  // cambio, en vez de solo decir "subió" o "bajó" sin contexto.
+  let tendencia = null;
+  if(extractions.length >= 6){
+    const mitad = Math.floor(extractions.length / 2);
+    const metricasRecientes = calcularMetricasDeGrupo(extractions.slice(0, mitad));
+    const metricasAnteriores = calcularMetricasDeGrupo(extractions.slice(mitad));
+    if(metricasRecientes && metricasAnteriores){
+      const diferencia = metricasRecientes.score - metricasAnteriores.score;
+      let variableClave = null, mayorCambio = 3; // umbral mínimo para no señalar ruido menor
+      metricasRecientes.variables.forEach(vr=>{
+        const va = metricasAnteriores.variables.find(v=>v.nombre===vr.nombre);
+        if(va){
+          const cambio = Math.abs(vr.cv - va.cv) * 100;
+          if(cambio > mayorCambio){ mayorCambio = cambio; variableClave = vr.nombre; }
+        }
+      });
+      tendencia = {
+        direccion: Math.abs(diferencia) < 5 ? 'estable' : diferencia > 0 ? 'mejorando' : 'empeorando',
+        scoreAnterior: Number(metricasAnteriores.score.toFixed(0)),
+        scoreReciente: Number(metricasRecientes.score.toFixed(0)),
+        variableClave,
+      };
+    }
+  }
+
   return {
     suficientesDatos: true,
-    score: Number(scoreGeneral.toFixed(0)),
+    score: Number(metricas.score.toFixed(0)),
     label,
-    variables: variables.map(v=>({ nombre: v.nombre, variacionPorcentual: Number((v.cv*100).toFixed(1)) })),
+    variables: metricas.variables.map(v=>({ nombre: v.nombre, variacionPorcentual: Number((v.cv*100).toFixed(1)) })),
     muestras: extractions.length,
+    tendencia,
   };
 }
 

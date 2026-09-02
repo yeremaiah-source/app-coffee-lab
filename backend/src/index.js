@@ -106,9 +106,18 @@ app.use((err, req, res, next) => {
   if (err.code === 'P2025') {
     return res.status(404).json({ error: 'El registro que buscás no existe.' });
   }
-  const status = err.status || (err.message === 'Origen no permitido por CORS' ? 403 : 500);
+  const esErrorCORS = err.message === 'Origen no permitido por CORS';
+  const status = err.status || (esErrorCORS ? 403 : 500);
   const esErrorDePrisma = typeof err.code === 'string' && err.code.startsWith('P');
-  const mensaje = esErrorDePrisma ? 'No se pudo completar la operación.' : (err.message || 'Error interno');
+  // Para cualquier error no contemplado explícitamente (un bug, una
+  // librería que falla, una excepción inesperada), nunca se manda el
+  // mensaje crudo al cliente — podría filtrar rutas de archivos,
+  // nombres de tablas, o detalles internos del código. El error
+  // completo ya quedó en los logs del servidor (console.error de
+  // arriba); acá solo se informa un mensaje genérico y seguro.
+  const mensaje = esErrorCORS ? err.message
+    : esErrorDePrisma ? 'No se pudo completar la operación.'
+    : 'Ocurrió un error inesperado. Intentá de nuevo.';
   res.status(esErrorDePrisma ? 500 : status).json({ error: mensaje });
 });
 

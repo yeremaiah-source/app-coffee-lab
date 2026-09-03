@@ -4,6 +4,12 @@ const { hashPassword, verifyPassword } = require('../utils/hash');
 const { signToken } = require('../utils/jwt');
 const { sendPasswordResetEmail } = require('../utils/email');
 
+// Se calcula una sola vez al arrancar el servidor (no en cada pedido)
+// — sirve para comparar contra un usuario que no existe, y que el
+// login tarde lo mismo exista o no esa cuenta. Ver el comentario en
+// login() para el porqué.
+const hashSeñueloPromise = hashPassword('valor-señuelo-sin-uso-real-' + crypto.randomBytes(8).toString('hex'));
+
 // GET /api/auth/me — la fuente de verdad real de quién sos ahora
 // mismo, según la base de datos. El frontend la usa al abrir la app
 // para no confiar ciegamente en lo que quedó guardado en el
@@ -50,7 +56,15 @@ async function login(req, res, next) {
       return res.status(400).json({ error: 'Usuario y contraseña son obligatorios.' });
     }
     const user = await prisma.user.findUnique({ where: { username } });
-    if (!user) return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+    if (!user) {
+      // Aunque el usuario no exista, igual se corre una comparación de
+      // bcrypt contra un hash señuelo — si no, responder de inmediato
+      // en este caso (vs. tardar lo que tarda bcrypt cuando sí existe)
+      // deja una diferencia de tiempo medible que permite adivinar qué
+      // usuarios están registrados, sin necesitar ninguna contraseña.
+      await verifyPassword(password, await hashSeñueloPromise);
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+    }
 
     // Bloqueo por cuenta (no por IP): protege contra fuerza bruta
     // distribuida entre muchas IPs distintas, algo que el rate
@@ -153,7 +167,13 @@ async function forgotPassword(req, res, next) {
 
     const frontendOrigin = (process.env.FRONTEND_ORIGIN || '').split(',')[0].trim() || 'http://localhost';
     const resetUrl = `${frontendOrigin}/?reset=${token}`;
-    await sendPasswordResetEmail(user.email, resetUrl);
+    // No se espera a que el email termine de mandarse antes de
+    // responder — si se esperara, la respuesta tardaría muchísimo más
+    // cuando el usuario sí existe (todo el viaje de ida y vuelta del
+    // envío real) que cuando no existe (una sola lectura a la base),
+    // filtrando por tiempo exactamente lo que la respuesta genérica de
+    // arriba intenta ocultar en el texto.
+    sendPasswordResetEmail(user.email, resetUrl).catch(err => console.error('No se pudo enviar el email de recuperación:', err));
 
     res.json(respuestaGenerica);
   } catch (e) { next(e); }

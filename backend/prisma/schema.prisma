@@ -38,6 +38,7 @@ model User {
   likes          Like[]
   pourSesiones   PourTrainerSesion[]
   recetasFavoritas RecipeFavorito[]
+  cafesFavoritos   CoffeeFavorito[]
 }
 
 // Sesiones del entrenador de vertido (Pour Trainer) — cada intento de
@@ -196,6 +197,7 @@ model Coffee {
   fechaTueste    DateTime?
   notasSensoriales String?
   createdAt      DateTime @default(now())
+  favoritos      CoffeeFavorito[]
 }
 
 model CommunityPost {
@@ -237,6 +239,19 @@ model RecipeFavorito {
   createdAt DateTime @default(now())
 
   @@unique([recipeId, userId])
+}
+
+// Marca de "ficha de café que quiero recordar" — igual patrón que
+// RecipeFavorito, para poder encontrarla rápido después.
+model CoffeeFavorito {
+  id        String   @id @default(uuid())
+  coffee    Coffee   @relation(fields: [coffeeId], references: [id], onDelete: Cascade)
+  coffeeId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([coffeeId, userId])
 }
 
 model Comment {

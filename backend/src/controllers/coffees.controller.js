@@ -4,9 +4,33 @@ async function listar(req, res, next) {
   try {
     const coffees = await prisma.coffee.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { addedBy: { select: { username: true } } },
+      include: {
+        addedBy: { select: { username: true } },
+        favoritos: req.user ? { where: { userId: req.user.sub }, select: { id: true } } : false,
+      },
     });
-    res.json(coffees);
+    const coffeesConFavorito = coffees.map(c => {
+      const { favoritos, ...resto } = c;
+      return { ...resto, favoritoPorMi: req.user ? favoritos.length > 0 : false };
+    });
+    res.json(coffeesConFavorito);
+  } catch (e) { next(e); }
+}
+
+async function toggleFavorito(req, res, next) {
+  try {
+    const coffee = await prisma.coffee.findUnique({ where: { id: req.params.id } });
+    if (!coffee) return res.status(404).json({ error: 'Café no encontrado.' });
+
+    const existente = await prisma.coffeeFavorito.findUnique({
+      where: { coffeeId_userId: { coffeeId: req.params.id, userId: req.user.sub } },
+    });
+    if (existente) {
+      await prisma.coffeeFavorito.delete({ where: { id: existente.id } });
+    } else {
+      await prisma.coffeeFavorito.create({ data: { coffeeId: req.params.id, userId: req.user.sub } });
+    }
+    res.json({ favorito: !existente });
   } catch (e) { next(e); }
 }
 
@@ -49,4 +73,4 @@ async function crear(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, obtenerUno, crear };
+module.exports = { listar, obtenerUno, crear, toggleFavorito };

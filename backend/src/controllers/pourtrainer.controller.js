@@ -11,6 +11,34 @@ async function listar(req, res, next) {
   } catch (e) { next(e); }
 }
 
+// Ranking público: el mejor puntaje de cada usuario, por tipo de
+// ejercicio (mezclar puntajes de ejercicios distintos no tendría
+// sentido, cada uno tiene su propia escala/dificultad). Solo se
+// expone username, foto, y el puntaje — nada más.
+async function ranking(req, res, next) {
+  try {
+    const ejercicio = req.query.ejercicio || 'Pulso constante';
+    const agrupado = await prisma.pourTrainerSesion.groupBy({
+      by: ['userId'],
+      where: { ejercicio },
+      _max: { puntaje: true },
+      orderBy: { _max: { puntaje: 'desc' } },
+      take: 10,
+    });
+    const usuarios = await prisma.user.findMany({
+      where: { id: { in: agrupado.map(g => g.userId) } },
+      select: { id: true, username: true, avatarUrl: true },
+    });
+    const mapaUsuarios = Object.fromEntries(usuarios.map(u => [u.id, u]));
+    const resultado = agrupado.map(g => ({
+      username: mapaUsuarios[g.userId]?.username || 'Usuario',
+      avatarUrl: mapaUsuarios[g.userId]?.avatarUrl || null,
+      mejorPuntaje: g._max.puntaje,
+    }));
+    res.json(resultado);
+  } catch (e) { next(e); }
+}
+
 async function crear(req, res, next) {
   try {
     const { ejercicio, puntaje, detalle } = req.body;
@@ -32,4 +60,4 @@ async function crear(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, crear };
+module.exports = { listar, ranking, crear };

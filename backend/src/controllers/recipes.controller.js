@@ -1,5 +1,5 @@
 const prisma = require('../prismaClient');
-const { crearNotificacion } = require('./notifications.controller');
+const { crearNotificacion, crearNotificacionMasiva } = require('./notifications.controller');
 
 async function listar(req, res, next) {
   try {
@@ -34,11 +34,26 @@ async function crear(req, res, next) {
       include: { author: { select: { username: true } } },
     });
     res.status(201).json(recipe);
-    // Nota: antes esto le mandaba una notificación a TODOS los
-    // usuarios registrados por cada receta nueva — cualquier usuario
-    // autenticado podía activarlo creando recetas repetidamente, sin
-    // ningún límite. Se sacó: las notificaciones masivas quedan
-    // reservadas solo para anuncios de administrador.
+
+    // Se avisa a todos de las recetas nuevas de verdad (no versiones ni
+    // duplicados) — pero como esto es una notificación masiva que
+    // cualquier usuario autenticado puede disparar, se limita a como
+    // mucho una por persona cada 24 horas. Sin este límite, alguien
+    // podría publicar recetas repetidamente para spamear a todos los
+    // usuarios sin ningún freno.
+    if (recipe.version === 1) {
+      const desde = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const yaNotificoHoy = await prisma.recipe.count({
+        where: { authorId: req.user.sub, version: 1, createdAt: { gte: desde }, id: { not: recipe.id } },
+      });
+      if (yaNotificoHoy === 0) {
+        await crearNotificacionMasiva({
+          tipo: 'receta_nueva',
+          mensaje: `@${recipe.author.username} publicó una receta nueva: "${recipe.nombre}"`,
+          excluirUserId: req.user.sub,
+        });
+      }
+    }
   } catch (e) { next(e); }
 }
 

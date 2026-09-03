@@ -59,10 +59,12 @@ async function anunciar(req, res, next) {
     if (!mensaje || !mensaje.trim()) {
       return res.status(400).json({ error: 'El mensaje del anuncio no puede estar vacío.' });
     }
+    // A diferencia del resto de notificaciones masivas, este anuncio
+    // SÍ le llega también a quien lo envía — el administrador quiere
+    // ver en su propia campanita que el anuncio salió bien.
     await crearNotificacionMasiva({
       tipo: 'anuncio',
       mensaje: mensaje.trim(),
-      excluirUserId: req.user.sub,
     });
     res.json({ ok: true });
   } catch (e) { next(e); }

@@ -37,6 +37,7 @@ model User {
   experimentos   Experimento[]
   likes          Like[]
   pourSesiones   PourTrainerSesion[]
+  recetasFavoritas RecipeFavorito[]
 }
 
 // Sesiones del entrenador de vertido (Pour Trainer) — cada intento de
@@ -175,6 +176,7 @@ model Recipe {
   // pueden ser de otras personas.
   parentRecipe     Recipe?  @relation("RecipeVersions", fields: [parentRecipeId], references: [id], onDelete: SetNull)
   versiones        Recipe[] @relation("RecipeVersions")
+  favoritos        RecipeFavorito[]
   createdAt        DateTime @default(now())
 }
 
@@ -221,6 +223,20 @@ model Like {
   createdAt DateTime      @default(now())
 
   @@unique([postId, userId])
+}
+
+// Marca personal de "esta es mi versión favorita" dentro de una
+// familia de recetas versionadas — cada usuario puede marcar la que
+// prefiera, independiente de quién la haya creado.
+model RecipeFavorito {
+  id        String   @id @default(uuid())
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([recipeId, userId])
 }
 
 model Comment {

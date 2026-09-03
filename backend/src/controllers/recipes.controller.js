@@ -128,11 +128,38 @@ async function historial(req, res, next) {
 
     const familiaConAutor = await prisma.recipe.findMany({
       where: { id: { in: familia.map(f => f.id) } },
-      include: { author: { select: { username: true } } },
+      include: {
+        author: { select: { username: true } },
+        // Solo se trae el favorito puntual del visitante actual (si
+        // está logueado) — nunca se expone quién más marcó qué.
+        favoritos: req.user ? { where: { userId: req.user.sub }, select: { id: true } } : false,
+      },
       orderBy: { version: 'asc' },
     });
 
-    res.json(familiaConAutor);
+    const familiaConFavorito = familiaConAutor.map(r => {
+      const { favoritos, ...resto } = r;
+      return { ...resto, favoritoPorMi: req.user ? favoritos.length > 0 : false };
+    });
+
+    res.json(familiaConFavorito);
+  } catch (e) { next(e); }
+}
+
+async function toggleFavorito(req, res, next) {
+  try {
+    const recipe = await prisma.recipe.findUnique({ where: { id: req.params.id } });
+    if (!recipe) return res.status(404).json({ error: 'Receta no encontrada.' });
+
+    const existente = await prisma.recipeFavorito.findUnique({
+      where: { recipeId_userId: { recipeId: req.params.id, userId: req.user.sub } },
+    });
+    if (existente) {
+      await prisma.recipeFavorito.delete({ where: { id: existente.id } });
+    } else {
+      await prisma.recipeFavorito.create({ data: { recipeId: req.params.id, userId: req.user.sub } });
+    }
+    res.json({ favorito: !existente });
   } catch (e) { next(e); }
 }
 
@@ -162,4 +189,4 @@ async function eliminar(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { listar, crear, duplicar, actualizar, historial, eliminar };
+module.exports = { listar, crear, duplicar, actualizar, historial, eliminar, toggleFavorito };
